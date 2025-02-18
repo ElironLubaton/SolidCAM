@@ -1,0 +1,30 @@
+[1mTopology: Counter_Bore_Thru[0m
+Total number of hole groups: 2
+Total number of instances: 3
+
+Part name: MultipleMACs_2.PRT.ML.json
+Number of instances : 2
+Geometry shape: [{'p0': [2.75, 0.0], 'p1': [2.75, -46.42], 'type': 'line'}, {'p0': [2.75, -46.42], 'p1': [6.12, -46.42], 'type': 'line'}, {'p0': [6.12, -46.42], 'p1': [6.12, -50.0], 'type': 'line'}]
+Holes centers: {(25.0, 0.0, 43.473), (25.0, 0.0, 9.626)}
+Diameter: 5.5
+Depth: 50.0
+[1m3 jobs total[0m were performed on this hole group.
+The order they're being exectued:
+1 - Job type: 2_5D_Drilling, Tool type: Spot, Job name and number: Spot_drill (1)
+2 - Job type: 2_5D_Drilling, Tool type: Drill, Job name and number: D_drill (2)
+3 - Job type: Profile, Tool type: End_Mill, Job name and number: F_contour1 (3)
+
+Part name: MultipleMACs_2.PRT.ML.json
+Number of instances : 1
+Geometry shape: [{'p0': [4.5, -5.68], 'p1': [4.5, -50.0], 'type': 'line'}, {'p0': [9.005, -5.68], 'p1': [4.5, -5.68], 'type': 'line'}, {'p0': [9.005, 0.0], 'p1': [9.005, -5.68], 'type': 'line'}]
+Holes centers: {(25.0, 13.131, 27.039)}
+Diameter: 9.0
+Depth: 50.0
+[1m3 jobs total[0m were performed on this hole group.
+The order they're being exectued:
+1 - Job type: 2_5D_Drilling, Tool type: Spot, Job name and number: Spot_drill (1)
+2 - Job type: 2_5D_Drilling, Tool type: Drill, Job name and number: D_drill5 (4)
+3 - Job type: Profile, Tool type: End_Mill, Job name and number: F_contour2 (5)
+
+______________________________________________________
+
