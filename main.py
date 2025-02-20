@@ -70,9 +70,9 @@ for part_name in os.listdir(dir_path):
           if job["type"] in drilling_types:
             # Checking if the job is not pre-drilling for creating pockets
             if "recognized_holes_groups" in job['geometry']:
-              process_drilling_jobs(job, job["job_number"], part_name, topologies_dict)
+              process_drilling_jobs(job, job["job_number"], job["type"], part_name, topologies_dict)
           else:
-            # Else if the job is NOT a drilling job
+            # The job is NOT a drilling job - for now, refers to Profile and Chamfer
             process_non_drilling_jobs(job, job["job_number"], topologies_dict)
 
 
