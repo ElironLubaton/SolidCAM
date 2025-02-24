@@ -76,7 +76,7 @@ class HoleGroup:
     self.thread_diameter = 0
     self.thread_pitch    = 0
 
-  def add_job(self, job, drill_job_flag, job_type, tool_type, tool_parameters, job_depth, new_coordinates, job_number, holes_group_info):
+  def add_job(self, job, drill_job_flag, job_type, tool_type, tool_parameters, job_depth, new_coordinates, job_number, holes_group_info=None):
     """
     This method assigns a job to a hole group ONLY if the same exact job doesn't
     already exist - we check for existence via comparison of job depth, job type,
@@ -140,7 +140,7 @@ class Job:
   An object of this class holds a job that is done on a hole.
   Each field holds the json's field with the same name.
   """
-  def __init__(self, job, drill_job_flag, job_type, tool_type, tool_parameters, job_depth, new_coordinates, job_number, holes_group_info):
+  def __init__(self, job, drill_job_flag, job_type, tool_type, tool_parameters, job_depth, new_coordinates, job_number, holes_group_info=None):
     self.job_number = job_number                # Job's index in SolidCAM
     self.job_name = job['name']                 # Job name as defined by the user
     self.centers = set(new_coordinates)         # The (x,y) coordinates of holes that are being worked by this job
@@ -180,6 +180,7 @@ class Job:
       drill = job.get("drill", {})
       cycle = drill.get("cycle", {})
 
+      # Defining the parameters that all drilling jobs contain
       self.drill_cycle_type = cycle.get("drill_type")
       self.drill_gcode_name = cycle.get("gcode_name")
       self.drill_params = cycle.get("params")
