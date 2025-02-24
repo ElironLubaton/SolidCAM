@@ -19,6 +19,7 @@ def extract_coordinates(holes_group_info, job_type, rotation_mat, translation_ve
     new_coordinates (set): Coordinates extracted from the job
   """
 
+  # Extracting coordinates from drilling jobs
   if job_type in drilling_types:
     holes_positions = holes_group_info['_tech_positions']
 
@@ -35,13 +36,9 @@ def extract_coordinates(holes_group_info, job_type, rotation_mat, translation_ve
     else:
       print("Haven't encountered this format yet. Need to check it out")  # Debugging purposes
 
-
+  # todo finish the section below once I'll have hole information in Profile and Chamfer jobs
+  # # Extracting coordinates from Profile and Chamfer jobs
   # elif job_type == 'NC_CHAMFER' or job_type == "NC_PROFILE":
-  #   new_coordinates = {(round(vals[i], 3),
-  #                       round(vals[i+1], 3),
-  #                       0) for i in range(0, len(vals), 3)}
-
-  # elif job_type == 'NC_PROFILE':
   #   new_coordinates = {(round(vals[i], 3),
   #                       round(vals[i+1], 3),
   #                       0) for i in range(0, len(vals), 3)}
@@ -50,6 +47,7 @@ def extract_coordinates(holes_group_info, job_type, rotation_mat, translation_ve
   # Transforming the points to the CAD coordinate system origin
   new_coordinates = transform_points(new_coordinates, rotation_mat, translation_vec)
   return new_coordinates
+
 
 
 def process_drilling_jobs(job, job_number, job_type, part_name, topologies_dict):
@@ -73,29 +71,6 @@ def process_drilling_jobs(job, job_number, job_type, part_name, topologies_dict)
   # Loops on the holes groups in each job
   for holes_group_info in job['geometry']["recognized_holes_groups"]:
     new_coordinates = extract_coordinates(holes_group_info, job_type, rotation_mat, translation_vec)
-
-  # # Loops on the holes groups in each job
-  # for holes_group_info in job['geometry']["recognized_holes_groups"]:
-  #   # Saving all the hole positions
-  #   holes_positions = holes_group_info['_tech_positions']
-  #
-  #   # Defining a set with the holes centers - each hole center is (x,y,z) coordinates
-  #   if holes_group_info["_positions_format"] == "VFrmt_P3Str_P3End_V3Dir":
-  #     # For this position format, take only the first 3 values (out of 9) of each point
-  #     new_coordinates = [holes_positions[i:i+3] for i in range(0, len(holes_positions), 9)]
-  #
-  #   elif holes_group_info["_positions_format"] == "VFrmt_XY":
-  #     # For XY position format, take (x,y) values and set 'z' to the geometry's upper level.
-  #     new_coordinates = {(round(holes_positions[i], 3),
-  #                         round(holes_positions[i+1], 3),
-  #                         round(holes_group_info["_geom_upper_level"], 3)) for i in range(0, len(holes_positions), 2)}
-  #   else:
-  #     print("Haven't encountered this format yet. Need to check it out")   # Debugging purposes
-
-    # # Transforming the points to the CAD coordinate system origin
-    # new_coordinates = transform_points(new_coordinates, rotation_mat, translation_vec)
-    # # print(f"new drilling coordinates: {{{', '.join(f'({x}, {y}, {z})' for x, y, z in new_coordinates)}}}")  # For debugging
-
 
     # Checking if the topology type is a valid string, and Cosmetics
     topology = topology_sort(holes_group_info["_topology_type"])
