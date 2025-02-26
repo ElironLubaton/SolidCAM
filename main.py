@@ -2,7 +2,7 @@ import os
 import sys
 
 from Process_Jobs import process_non_drilling_jobs, process_drilling_jobs
-from Utilities_and_Cosmetics import read_json
+from Utilities_and_Cosmetics import read_json, validate_job
 
 
 """
@@ -68,11 +68,14 @@ for part_name in os.listdir(dir_path):
 
           # True if the job is one of the drilling jobs
           if job["type"] in drilling_types:
+            validate_job(job, True) # sending True because it's a drilling job
             # Checking if the job is not pre-drilling for creating pockets
             if "recognized_holes_groups" in job['geometry']:
               process_drilling_jobs(job, job["job_number"], job["type"], part_name, topologies_dict)
+
           else:
             # The job is NOT a drilling job - for now, refers to Profile and Chamfer
+            validate_job(job, False) # sending False because it's NOT a drilling job
             process_non_drilling_jobs(job, job["job_number"], topologies_dict)
 
 
