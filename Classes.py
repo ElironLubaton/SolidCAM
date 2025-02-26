@@ -88,6 +88,10 @@ class HoleGroup:
     if "ver" in tool_parameters:     # Removing unnecessary field from json: "ver" under tool_parameters
       tool_parameters.pop("ver")
 
+    # Note - In Multi-Axis Drilling jobs, the job depth will be defined by the tech_depth inside the hole group info
+    if job["job_type"] == "NC_JOB_MW_DRILL_5X":
+      job_depth = holes_group_info["_tech_depth"]
+
     # Checking if the job already exists
     for existing_job in self.jobs:   # Going over all the existing jobs in that hole group
       # if true, then job already exists
@@ -148,6 +152,7 @@ class Job:
     self.tool_type = tool_type                  # Tool being used (e.g, End Mill)
     self.tool_parameters = tool_parameters      # Tool parameters
     self.job_depth = job_depth                  # How deep the tool goes in, NOT taking into account the tool's tip
+    self.tool_depth = None                      # How deep the tool goes in, taking into account the tool's tip
 
     self.home_number = job['home_number']
     self.parallel_home_numbers = job['home_vParallelHomeNumbers']
@@ -158,8 +163,7 @@ class Job:
     self.drill_params =         None
     self.cycle_is_using =       None
     self.depth_diameter_value = None  # To which diameter of the head the tool gets inside the material
-    self.depth_type =           None  # Cutter tip, Full diameter, Diameter value
-    self.tool_depth =           None  # How deep the tool goes in, taking into account the tool's tip
+    self.depth_type =           None  # Either Cutter tip, Full diameter, Diameter value
 
     self.decide_drill_params(job, holes_group_info) # Assign drill-related attributes depending on job type
     self.compute_tool_depth()  # How deep the tool goes in, taking into account the tool's tip
@@ -208,7 +212,7 @@ class Job:
           self.depth_type = "Cutter_Tip"
         elif drill["depth_is_full_diameter"]:
           self.depth_type = "Full_Diameter"
-        elif drill["depth_is_tool_diameter"]:
+        elif drill["depth_is_tool_Diameter"]:
           self.depth_type = "Tool_Diameter"
 
     # True if it's a Profile or Chamfer job, so return nothing
