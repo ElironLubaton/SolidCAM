@@ -123,7 +123,7 @@ def validate_job(job, drill_flag):
                 for holes_group_info in job['geometry']["recognized_holes_groups"]:
 
                     # Checking if the following fields are not None
-                    fields_not_none = ["_geom_depth", "_geom_thread_depth", "_geom_thread_diameter", "_geom_thread_pitch", "_geom_upper_level"]
+                    fields_not_none = ["_geom_depth", "_geom_thread_depth", "_geom_thread_hole_diameter", "_geom_thread_pitch", "_geom_upper_level"]
                     for field in fields_not_none:
                         if holes_group_info.get(field) is None:
                             errors.append(f"{field} field is invalid")

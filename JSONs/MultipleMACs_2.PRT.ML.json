@@ -57,16 +57,17 @@
                         "ver": 1
                     },
                     "cycle_isUsing": true,
-                    "depth_diameter_value": 4.0,
+                    "depth_diameter_value": 5.5,
                     "depth_is_cutter_tip": false,
-                    "depth_is_full_diameter": false,
-                    "depth_is_tool_Diameter": true
+                    "depth_is_full_diameter": true,
+                    "depth_is_tool_Diameter": false
                 },
                 "geometry": {
                     "name": "drill3",
                     "poly_arcs": null,
                     "recognized_holes_groups": [
                         {
+                            "_fastener_size": "M5",
                             "_geomShapeMask": 212.0,
                             "_geom_ShapePoly": [
                                 {
@@ -112,11 +113,12 @@
                                 -25.0
                             ],
                             "_geom_thread_depth": 0.0,
-                            "_geom_thread_diameter": 0.0,
+                            "_geom_thread_hole_diameter": 0.0,
                             "_geom_thread_pitch": 0.0,
                             "_geom_upper_level": 0.0,
                             "_group_id": "",
                             "_positions_format": "VFrmt_XY",
+                            "_standard": "ANSI Metric",
                             "_tech_delta_depth": 0.0,
                             "_tech_depth": 0.0,
                             "_tech_depth_type": "DrMCT_CutterTip",
@@ -132,6 +134,7 @@
                             "_topology_type": "HR_hwCounterBoreThru"
                         },
                         {
+                            "_fastener_size": "M8",
                             "_geomShapeMask": 212.0,
                             "_geom_ShapePoly": [
                                 {
@@ -175,11 +178,12 @@
                                 -11.86878797652528
                             ],
                             "_geom_thread_depth": 0.0,
-                            "_geom_thread_diameter": 0.0,
+                            "_geom_thread_hole_diameter": 0.0,
                             "_geom_thread_pitch": 0.0,
                             "_geom_upper_level": 0.0,
                             "_group_id": "",
                             "_positions_format": "VFrmt_XY",
+                            "_standard": "ANSI Metric",
                             "_tech_delta_depth": 0.0,
                             "_tech_depth": 0.0,
                             "_tech_depth_type": "DrMCT_CutterTip",
@@ -281,6 +285,8 @@
                             "value": 60.0
                         }
                     ],
+                    "manufacturer": "CERATIZIT",
+                    "mfc_catalog_number": "1231233",
                     "parameters": [
                         {
                             "name": "A",
@@ -295,6 +301,7 @@
                             "value": 0.0
                         }
                     ],
+                    "tool_description": "Check",
                     "tool_type": "TOOL_SPOT",
                     "ver": 1
                 },
@@ -361,6 +368,7 @@
                     "poly_arcs": null,
                     "recognized_holes_groups": [
                         {
+                            "_fastener_size": "M5",
                             "_geomShapeMask": 212.0,
                             "_geom_ShapePoly": [
                                 {
@@ -406,11 +414,12 @@
                                 -25.0
                             ],
                             "_geom_thread_depth": 0.0,
-                            "_geom_thread_diameter": 0.0,
+                            "_geom_thread_hole_diameter": 0.0,
                             "_geom_thread_pitch": 0.0,
                             "_geom_upper_level": 0.0,
                             "_group_id": "",
                             "_positions_format": "VFrmt_XY",
+                            "_standard": "ANSI Metric",
                             "_tech_delta_depth": 0.0,
                             "_tech_depth": 0.0,
                             "_tech_depth_type": "DrMCT_CutterTip",
@@ -512,6 +521,8 @@
                             "value": 80.0
                         }
                     ],
+                    "manufacturer": "GUHRING",
+                    "mfc_catalog_number": "669212",
                     "parameters": [
                         {
                             "name": "A",
@@ -526,6 +537,7 @@
                             "value": 0.0
                         }
                     ],
+                    "tool_description": "Check2",
                     "tool_type": "TOOL_DRILL",
                     "ver": 1
                 },
@@ -711,6 +723,8 @@
                             "value": 80.0
                         }
                     ],
+                    "manufacturer": "GUHRING",
+                    "mfc_catalog_number": "7367",
                     "parameters": [
                         {
                             "name": "HelicalAngle",
@@ -725,6 +739,7 @@
                             "value": 0.0
                         }
                     ],
+                    "tool_description": "Check3",
                     "tool_type": "TOOL_END_MILL",
                     "ver": 1
                 },
@@ -791,6 +806,7 @@
                     "poly_arcs": null,
                     "recognized_holes_groups": [
                         {
+                            "_fastener_size": "M8",
                             "_geomShapeMask": 212.0,
                             "_geom_ShapePoly": [
                                 {
@@ -834,11 +850,12 @@
                                 -2.039008078179279
                             ],
                             "_geom_thread_depth": 0.0,
-                            "_geom_thread_diameter": 0.0,
+                            "_geom_thread_hole_diameter": 0.0,
                             "_geom_thread_pitch": 0.0,
                             "_geom_upper_level": 0.0,
                             "_group_id": "",
                             "_positions_format": "VFrmt_XY",
+                            "_standard": "ANSI Metric",
                             "_tech_delta_depth": 0.0,
                             "_tech_depth": 0.0,
                             "_tech_depth_type": "DrMCT_CutterTip",
@@ -936,6 +953,8 @@
                             "value": 80.0
                         }
                     ],
+                    "manufacturer": "",
+                    "mfc_catalog_number": "",
                     "parameters": [
                         {
                             "name": "A",
@@ -950,6 +969,7 @@
                             "value": 0.0
                         }
                     ],
+                    "tool_description": "",
                     "tool_type": "TOOL_DRILL",
                     "ver": 1
                 },
@@ -1112,6 +1132,8 @@
                             "value": 80.0
                         }
                     ],
+                    "manufacturer": "",
+                    "mfc_catalog_number": "",
                     "parameters": [
                         {
                             "name": "HelicalAngle",
@@ -1126,6 +1148,7 @@
                             "value": 0.0
                         }
                     ],
+                    "tool_description": "",
                     "tool_type": "TOOL_END_MILL",
                     "ver": 1
                 },
@@ -1248,5 +1271,5 @@
     },
     "event_name": "close_part",
     "format": 0.0,
-    "timestamp": "1740400952"
+    "timestamp": "1741175651"
 }

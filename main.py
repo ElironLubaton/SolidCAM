@@ -40,7 +40,7 @@ A part can be processed by either two functions:
 
 topologies_dict = {} # Holds all the different topologies
 
-dir_path = 'C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/JSON'
+dir_path = 'C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/JSONs'
 
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
 
@@ -71,12 +71,12 @@ for part_name in os.listdir(dir_path):
             validate_job(job, True) # sending True because it's a drilling job
             # Checking if the job is not pre-drilling for creating pockets
             if "recognized_holes_groups" in job['geometry']:
-              process_drilling_jobs(job, job["job_number"], job["type"], part_name, topologies_dict)
+              process_drilling_jobs(job, part_name, topologies_dict)
 
           else:
             # The job is NOT a drilling job - for now, refers to Profile and Chamfer
             validate_job(job, False) # sending False because it's NOT a drilling job
-            process_non_drilling_jobs(job, job["job_number"], topologies_dict)
+            process_non_drilling_jobs(job, topologies_dict)
 
 
 
