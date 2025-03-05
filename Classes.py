@@ -18,7 +18,7 @@ class Topology:
     self.holes_groups = []             # The hole groups that belong to this topology
     self.jobs_orders_dict = dict()     # Used for printing the legend in plots
 
-  def add_hole_group(self, job, new_coordinates, new_geom_shape):
+  def add_hole_group(self, job, new_coordinates, new_geom_shape, holes_group_info, part_name):
     """
     This method creates a new hole group ONLY if the geometric shape of the hole group is new.
     If the geometric shape is not new, we just update the number of the instances
@@ -44,7 +44,7 @@ class Topology:
         return group, False
 
     # The geometry shape doesn't exist, so we create a new instance of HoleGroup
-    new_group = HoleGroup(new_coordinates, new_geom_shape)
+    new_group = HoleGroup(new_coordinates, new_geom_shape, holes_group_info, part_name)
     self.holes_groups.append(new_group)
     return new_group, True
 
@@ -64,19 +64,22 @@ class HoleGroup:
   An object of this class holds all the holes in the same hole group, and the
   description of the hole.
   """
-  def __init__(self, new_coordinates, geom_shape):
+  def __init__(self, new_coordinates, geom_shape, holes_group_info, part_name):
     self.centers = set(new_coordinates)  # The (x,y) coordinates of holes in this hole group
     self.jobs = []                # The jobs performed on this hole group by the order they were performed
     self.jobs_order = ''          # A string that holds the order of the jobs
     self.geom_shape = geom_shape  # Geomertric shape of the holes in this hole group
-    self.part_name       = None
-    self.diameter        = None   # The smallest diameter of the holes
-    self.hole_depth      = None
-    self.thread_depth    = 0
-    self.thread_diameter = 0
-    self.thread_pitch    = 0
+    self.part_name            = part_name
+    self.diameter             = abs(2*min(item["p0"][0] for item in geom_shape)) # The smallest diameter of the holes
+    self.hole_depth           = holes_group_info["_geom_depth"]       # Hole's depth
+    self.thread_depth         = holes_group_info["_geom_thread_depth"]    # Hole's thread depth
+    self.thread_hole_diameter = holes_group_info["_geom_thread_hole_diameter"] # Hole's thread diameter
+    self.thread_pitch         = holes_group_info["_geom_thread_pitch"]    # Hole's thread pitch
+    self.fastener_size        = holes_group_info["_fastener_size"]
+    self.standard             = holes_group_info["_standard"]
 
-  def add_job(self, job, drill_job_flag, job_type, tool_type, tool_parameters, job_depth, new_coordinates, job_number, holes_group_info=None):
+
+  def add_job(self, job, new_coordinates, holes_group_info=None):
     """
     This method assigns a job to a hole group ONLY if the same exact job doesn't
     already exist - we check for existence via comparison of job depth, job type,
@@ -84,12 +87,15 @@ class HoleGroup:
     """
     new_job_flag = True              # If stays True, then it is a new job
     # job_type = process_job_name(job_type)    # Cosmetics
-    tool_type = process_tool_type_name(tool_type) # Cosmetics
+    tool_type = process_tool_type_name(job['tool']['tool_type']) # Cosmetics
+    job_depth = job['job_depth']
+    job_type = job['type']
+    tool_parameters = job['tool']
     if "ver" in tool_parameters:     # Removing unnecessary field from json: "ver" under tool_parameters
       tool_parameters.pop("ver")
 
     # Note - In Multi-Axis Drilling jobs, the job depth will be defined by the tech_depth inside the hole group info
-    if job["job_type"] == "NC_JOB_MW_DRILL_5X":
+    if job["type"] == "NC_JOB_MW_DRILL_5X":
       job_depth = holes_group_info["_tech_depth"]
 
     # Checking if the job already exists
@@ -103,26 +109,10 @@ class HoleGroup:
         break
 
     if new_job_flag:  # Add the job if it's new
-      new_job = Job(job, drill_job_flag, job_type, tool_type,
-                    tool_parameters, job_depth, new_coordinates, job_number, holes_group_info)
+      new_job = Job(job, tool_type, new_coordinates, holes_group_info)
       self.jobs.append(new_job)
       self.jobs_order += f"{new_job.job_type} - {new_job.tool_type} | "
 
-  def update_parameters(self, holes_group_info, part_name):
-    """
-    This method update the parameters of a hole group.
-    The update takes place only ONCE - when the group is created.
-    """
-    # Adding the holes group part name
-    self.part_name = part_name
-    # Calculating the hole's diameter - taking the MINIMAL radius
-    geom_shape = holes_group_info["_geom_ShapePoly"]
-    self.diameter = abs(2*min(item["p0"][0] for item in geom_shape))
-    # Updating the hole's parameters
-    self.hole_depth      = holes_group_info["_geom_depth"]           # Hole's depth
-    self.thread_depth    = holes_group_info["_geom_thread_depth"]    # Hole's thread depth
-    self.thread_diameter = holes_group_info["_geom_thread_diameter"] # Hole's thread diameter
-    self.thread_pitch    = holes_group_info["_geom_thread_pitch"]    # Hole's thread pitch
 
   def print(self):
     """ This method prints selected fields from that hole group """
@@ -138,21 +128,21 @@ class HoleGroup:
     print('')
 
 
-
 class Job:
   """
   An object of this class holds a job that is done on a hole.
   Each field holds the json's field with the same name.
   """
-  def __init__(self, job, drill_job_flag, job_type, tool_type, tool_parameters, job_depth, new_coordinates, job_number, holes_group_info=None):
-    self.job_number = job_number                # Job's index in SolidCAM
-    self.job_name = job['name']                 # Job name as defined by the user
-    self.centers = set(new_coordinates)         # The (x,y) coordinates of holes that are being worked by this job
-    self.job_type = job_type                    # Technology used (e.g, 2_5D_Drilling)
-    self.tool_type = tool_type                  # Tool being used (e.g, End Mill)
-    self.tool_parameters = tool_parameters      # Tool parameters
-    self.job_depth = job_depth                  # How deep the tool goes in, NOT taking into account the tool's tip
-    self.tool_depth = None                      # How deep the tool goes in, taking into account the tool's tip
+  def __init__(self, job, tool_type, new_coordinates, holes_group_info=None):
+    self.centers = set(new_coordinates)  # The (x,y) coordinates of holes that are being worked by this job
+    self.job_number = job["job_number"]           # Job's index in SolidCAM
+    self.job_name = job['name']                   # Job name as defined by the user
+    self.job_type = job['type']                   # Technology used (e.g, 2_5D_Drilling)
+    self.tool_type = tool_type                    # Tool being used (e.g, End Mill)
+    self.tool_parameters = job['tool']            # Tool parameters
+    self.job_depth = job['job_depth']             # How deep the tool goes in, NOT taking into account the tool's tip
+    self.tool_depth = None                        # How deep the tool goes in, taking into account the tool's tip
+    self.thread_mill_params = job["thread_mill"]  # Thread Milling parameters - not None only on Thread Milling jobs
 
     self.home_number = job['home_number']
     self.parallel_home_numbers = job['home_vParallelHomeNumbers']
@@ -164,7 +154,6 @@ class Job:
     self.cycle_is_using =       None
     self.depth_diameter_value = None  # To which diameter of the head the tool gets inside the material
     self.depth_type =           None  # Either Cutter tip, Full diameter, Diameter value
-
     self.decide_drill_params(job, holes_group_info) # Assign drill-related attributes depending on job type
     self.compute_tool_depth()  # How deep the tool goes in, taking into account the tool's tip
 
