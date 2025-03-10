@@ -61,7 +61,6 @@ for part_name in os.listdir(dir_path):
         # Going over all jobs in the part
 
         for job in data["event_data"]["jobs"]:
-        # for job_number, job in enumerate(data["event_data"]["jobs"]):
           # # If the data is in inch, converting it to mm
           # if is_inch:
           #   job = convert_json_units(job)
