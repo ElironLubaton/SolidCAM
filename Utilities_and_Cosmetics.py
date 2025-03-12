@@ -4,7 +4,7 @@ from enum import Enum
 
 # Global Variables
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
-
+non_drilling_types = ["NC_PROFILE", "NC_CHAMFER"]
 
 
 # A function for reading JSON files
@@ -12,6 +12,7 @@ def read_json(file_path):
     with open(file_path, 'r') as file:
         data = json.load(file)
     return data
+
 
 
 def process_job_name(job_type):
@@ -72,7 +73,7 @@ class Mask(Enum):
     # I can access the strings by using: "Mask(number 1-4).name"
 
 
-def validate_job(job, drill_flag):
+def validate_job(job):
     """
     This function purpose is for verifying that all the JSON fields that are being used are either:
     1 - Existing
@@ -83,7 +84,6 @@ def validate_job(job, drill_flag):
 
     Args:
         job (dict): Holds all the fields of the job
-        drill_flag (bool): True if drilling job, False for Profile/Chamfer jobs
     """
 
     errors = []           # A list that will keep all the invalid lines
@@ -106,75 +106,74 @@ def validate_job(job, drill_flag):
                 errors.append(f"{tool_subfield} field is invalid")
 
     if job.get("type") is None:
-        errors.append("type field is invalid")                          # Checking type field
+        errors.append("type field is invalid")                            # Checking type field
     else:
         job_type = job.get("type")
 
-    # True if it's one of the Drilling jobs
-    if drill_flag:
+    # True if it's one of the Drilling jobs - they all should have valid 'drill' field
+    if job_type in drilling_types:
         if job.get("drill") is None or len(job.get("drill")) == 0:
-            errors.append("drill field is invalid")                               # Checking drill field
-        if job.get("geometry") is None:
-            errors.append("geometry field is invalid")                            # Checking geometry field
-        else:
-            if job["geometry"].get("recognized_holes_groups") is None:                        # Checking recognized_holes_groups field
-                errors.append("recognized_holes_groups field is invalid OR it's a pre-drilling operation")
-            else: # Going over on all the holes groups in the job
-                for holes_group_info in job['geometry']["recognized_holes_groups"]:
+            errors.append("drill field is invalid")                        # Checking drill field
 
-                    # Checking if the following fields are not None
-                    fields_not_none = ["_geom_depth", "_geom_thread_depth", "_geom_thread_hole_diameter", "_geom_thread_pitch", "_geom_upper_level"]
-                    for field in fields_not_none:
-                        if holes_group_info.get(field) is None:
-                            errors.append(f"{field} field is invalid")
-
-                    # Checking if the following fields are not None nor equals 0
-                    if holes_group_info.get("_geomShapeMask") is None or holes_group_info.get("_geomShapeMask")<=0:
-                        errors.append(f"_geomShapeMask field is invalid")
-
-                    fields_not_none_or_zero = ["_geom_ShapePoly", "_positions_format", "_topology_type"]
-                    for field in fields_not_none_or_zero:
-                        if holes_group_info.get(field) is None or len(holes_group_info.get(field)) == 0:
-                            errors.append(f"{field} field is invalid")
-
-                    # Checking _tech_positions field - it should contain at least 2 elements
-                    if holes_group_info.get("_tech_positions") is None or len(holes_group_info.get("_tech_positions"))<2:
-                        errors.append("_tech_positions field is invalid")
-
-                    # True if it's a Multi-Axis drilling job
-                    if job_type == "NC_JOB_MW_DRILL_5X":
-                        if holes_group_info.get("_tech_depth") is None:
-                            errors.append("_tech_depth field is invalid")          # Checking _tech_depth field
-                        if holes_group_info.get("_tech_depth_type") is None or len(holes_group_info.get("_tech_depth_type"))==0:
-                            errors.append("_tech_depth_type field is invalid")     # Checking _tech_depth_type field
-                        if holes_group_info.get("_tech_depth_type_val") is None:
-                            errors.append("_tech_depth_type_val field is invalid") # Checking _tech_depth_type_val field
-
-                    # todo This part regards Thread Milling, and I'm not sure if other jobs other than NC_THREAD should have this field not NULL
-                    # True if it's a Thread Milling Job
-                    elif job_type == "NC_THREAD":
-                        if job.get("thread_mill") is None or len(job.get("thread_mill")) == 0:
-                            errors.append("thread_mill field is invalid")
-
-                        # Checking again the thread fields, but also checking if their value is not zero
-                        fields_not_none = ["_geom_thread_depth", "_geom_thread_diameter", "_geom_thread_pitch"]
-                        for field in fields_not_none:
-                            if holes_group_info.get(field) is None or len(holes_group_info.get(field)) == 0:
-                                errors.append(f"{field} field is invalid")
-
-    # Gets to 'else' if "drill_flag" is False - meaning it's a Profile job or Chamfer job
+    # Checking 'geometry' field and many of his subfields
+    if job.get("geometry") is None:
+        errors.append("geometry field is invalid")                          # Checking geometry field
     else:
-        if job.get("geometry").get is None:                                          # Checking geometry field
-            errors.append("geometry field is invalid")
-        else:
+        # True if it's Profile or Chamfer job - they should have a valid 'poly_arcs' field
+        if job_type in non_drilling_types:
             geometry = job["geometry"]
             if geometry.get("poly_arcs") is None or len(geometry.get("poly_arcs"))==0:   # Checking poly_arcs field
                 errors.append("geometry.poly_arcs field is invalid")
-            if geometry.get("vals") is None:                                             # Checking vals field
-                errors.append("geometry.vals field is invalid")
+
+        if job["geometry"].get("recognized_holes_groups") is None:                        # Checking recognized_holes_groups field
+            errors.append("recognized_holes_groups field is invalid OR it's a pre-drilling operation")
+        else: # Going over on all the holes groups in the job
+            for holes_group_info in job['geometry']["recognized_holes_groups"]:
+
+                # Checking if the following fields are not None
+                fields_not_none = ["_geom_depth", "_geom_thread_depth", "_geom_thread_hole_diameter", "_geom_thread_pitch", "_geom_upper_level"]
+                for field in fields_not_none:
+                    if holes_group_info.get(field) is None:
+                        errors.append(f"{field} field is invalid")
+
+                # Checking if the following fields are not None nor equals 0
+                if holes_group_info.get("_geomShapeMask") is None or holes_group_info.get("_geomShapeMask")<=0:
+                    errors.append(f"_geomShapeMask field is invalid")
+
+                fields_not_none_or_zero = ["_geom_ShapePoly", "_positions_format", "_topology_type"]
+                for field in fields_not_none_or_zero:
+                    if holes_group_info.get(field) is None or len(holes_group_info.get(field)) == 0:
+                        errors.append(f"{field} field is invalid")
+
+                # Checking _tech_positions field - it should contain at least 2 elements
+                if holes_group_info.get("_tech_positions") is None or len(holes_group_info.get("_tech_positions"))<2:
+                    errors.append("_tech_positions field is invalid")
+
+                # True if it's a Multi-Axis drilling job
+                if job_type == "NC_JOB_MW_DRILL_5X":
+                    if holes_group_info.get("_tech_depth") is None:
+                        errors.append("_tech_depth field is invalid")          # Checking _tech_depth field
+                    if holes_group_info.get("_tech_depth_type") is None or len(holes_group_info.get("_tech_depth_type"))==0:
+                        errors.append("_tech_depth_type field is invalid")     # Checking _tech_depth_type field
+                    if holes_group_info.get("_tech_depth_type_val") is None:
+                        errors.append("_tech_depth_type_val field is invalid") # Checking _tech_depth_type_val field
+
+                # todo This part regards Thread Milling, and I'm not sure if other jobs other than NC_THREAD should have this field not NULL
+                # True if it's a Thread Milling Job
+                elif job_type == "NC_THREAD":
+                    if job.get("thread_mill") is None or len(job.get("thread_mill")) == 0:
+                        errors.append("thread_mill field is invalid")
+
+                    # Checking again the thread fields, but also checking if their value is not zero
+                    fields_not_none = ["_geom_thread_depth", "_geom_thread_diameter", "_geom_thread_pitch"]
+                    for field in fields_not_none:
+                        if holes_group_info.get(field) is None or len(holes_group_info.get(field)) == 0:
+                            errors.append(f"{field} field is invalid")
 
     # Printing the errors if there are any
     if errors:
+        print("\n\n")
         print(f"Job name: {job['name']}")
         for error in errors:
             print(error)
+        print("\n\n")

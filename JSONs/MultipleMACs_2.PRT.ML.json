@@ -132,69 +132,6 @@
                             ],
                             "_tech_upper_level": 0.0,
                             "_topology_type": "HR_hwCounterBoreThru"
-                        },
-                        {
-                            "_fastener_size": "M8",
-                            "_geomShapeMask": 212.0,
-                            "_geom_ShapePoly": [
-                                {
-                                    "p0": [
-                                        9.005,
-                                        0.0
-                                    ],
-                                    "p1": [
-                                        9.005,
-                                        -5.68
-                                    ],
-                                    "type": "line"
-                                },
-                                {
-                                    "p0": [
-                                        9.005,
-                                        -5.68
-                                    ],
-                                    "p1": [
-                                        4.5,
-                                        -5.68
-                                    ],
-                                    "type": "line"
-                                },
-                                {
-                                    "p0": [
-                                        4.5,
-                                        -5.68
-                                    ],
-                                    "p1": [
-                                        4.5,
-                                        -50.0
-                                    ],
-                                    "type": "line"
-                                }
-                            ],
-                            "_geom_depth": 50.0,
-                            "_geom_first_Cylinder_diameter": 18.01,
-                            "_geom_positions": [
-                                22.96099192182072,
-                                -11.86878797652528
-                            ],
-                            "_geom_thread_depth": 0.0,
-                            "_geom_thread_hole_diameter": 0.0,
-                            "_geom_thread_pitch": 0.0,
-                            "_geom_upper_level": 0.0,
-                            "_group_id": "",
-                            "_positions_format": "VFrmt_XY",
-                            "_standard": "ANSI Metric",
-                            "_tech_delta_depth": 0.0,
-                            "_tech_depth": 0.0,
-                            "_tech_depth_type": "DrMCT_CutterTip",
-                            "_tech_depth_type_val": 0.0,
-                            "_tech_is_half_depth": false,
-                            "_tech_positions": [
-                                22.96099192182072,
-                                -11.86878797652528
-                            ],
-                            "_tech_upper_level": 0.0,
-                            "_topology_type": "HR_hwCounterBoreThru"
                         }
                     ],
                     "type": "",
@@ -630,6 +567,75 @@
                             }
                         ]
                     ],
+                    "recognized_holes_groups": [
+                        {
+                            "_fastener_size": "M5",
+                            "_geomShapeMask": 212.0,
+                            "_geom_ShapePoly": [
+                                {
+                                    "p0": [
+                                        6.12,
+                                        0.0
+                                    ],
+                                    "p1": [
+                                        6.12,
+                                        -3.58
+                                    ],
+                                    "type": "line"
+                                },
+                                {
+                                    "p0": [
+                                        6.12,
+                                        -3.58
+                                    ],
+                                    "p1": [
+                                        2.75,
+                                        -3.58
+                                    ],
+                                    "type": "line"
+                                },
+                                {
+                                    "p0": [
+                                        2.75,
+                                        -3.58
+                                    ],
+                                    "p1": [
+                                        2.75,
+                                        -50.0
+                                    ],
+                                    "type": "line"
+                                }
+                            ],
+                            "_geom_depth": 50.0,
+                            "_geom_first_Cylinder_diameter": 12.24,
+                            "_geom_positions": [
+                                0.0,
+                                15.374120909471749,
+                                0.0,
+                                -18.47341318830425
+                            ],
+                            "_geom_thread_depth": 0.0,
+                            "_geom_thread_hole_diameter": 0.0,
+                            "_geom_thread_pitch": 0.0,
+                            "_geom_upper_level": 0.0,
+                            "_group_id": "",
+                            "_positions_format": "VFrmt_XY",
+                            "_standard": "ANSI Metric",
+                            "_tech_delta_depth": 0.0,
+                            "_tech_depth": 0.0,
+                            "_tech_depth_type": "DrMCT_CutterTip",
+                            "_tech_depth_type_val": 0.0,
+                            "_tech_is_half_depth": false,
+                            "_tech_positions": [
+                                0.0,
+                                15.374120909471749,
+                                0.0,
+                                -18.47341318830425
+                            ],
+                            "_tech_upper_level": 0.0,
+                            "_topology_type": "HR_hwCounterBoreThru"
+                        }
+                    ],
                     "type": "",
                     "usage_index": 0,
                     "vals": [
@@ -740,415 +746,6 @@
                         }
                     ],
                     "tool_description": "Check3",
-                    "tool_type": "TOOL_END_MILL",
-                    "ver": 1
-                },
-                "toolPath": [],
-                "type": "NC_PROFILE",
-                "ver": 1
-            },
-            {
-                "coolant": {
-                    "Machine": {
-                        "Air_Active": 0,
-                        "Bed_rinsing": 0,
-                        "Flood": 0,
-                        "Flood_HP": 0,
-                        "Flood_LP": 0,
-                        "Flood_Val": 0,
-                        "Flood_fVal": 0.0,
-                        "Mist": 0,
-                        "Mist_HP": 0,
-                        "Mist_LP": 0,
-                        "Mist_Val": 0,
-                        "Mist_fVal": 0.0
-                    },
-                    "Turret": {
-                        "Air_Active": 0,
-                        "Air_Through_Spindle": 0,
-                        "Flood": 0,
-                        "Flood_HP": 0,
-                        "Flood_LP": 0,
-                        "Flood_Val": 0,
-                        "Flood_fVal": 0.0,
-                        "IdDvice": 0,
-                        "MQL": 0,
-                        "Mist": 0,
-                        "Mist_HP": 0,
-                        "Mist_LP": 0,
-                        "Mist_Val": 0,
-                        "Mist_fVal": 0.0,
-                        "MqVal": 0.0,
-                        "Through_Tool": 0,
-                        "Through_Tool_HP": 0,
-                        "Through_Tool_LP": 0,
-                        "Through_Tool_MP": 0,
-                        "Through_Tool_Val": 0,
-                        "Through_Tool_fVal": 0.0
-                    }
-                },
-                "drill": {
-                    "cycle": {
-                        "drill_type": "ORD_DRILL",
-                        "gcode_name": "G81",
-                        "gui_name": "G81",
-                        "params": {},
-                        "ver": 1
-                    },
-                    "cycle_isUsing": true,
-                    "depth_diameter_value": 9.0,
-                    "depth_is_cutter_tip": false,
-                    "depth_is_full_diameter": true,
-                    "depth_is_tool_Diameter": false
-                },
-                "geometry": {
-                    "name": "drill5",
-                    "poly_arcs": null,
-                    "recognized_holes_groups": [
-                        {
-                            "_fastener_size": "M8",
-                            "_geomShapeMask": 212.0,
-                            "_geom_ShapePoly": [
-                                {
-                                    "p0": [
-                                        4.5,
-                                        0.0
-                                    ],
-                                    "p1": [
-                                        4.5,
-                                        -44.32
-                                    ],
-                                    "type": "line"
-                                },
-                                {
-                                    "p0": [
-                                        4.5,
-                                        -44.32
-                                    ],
-                                    "p1": [
-                                        9.005,
-                                        -44.32
-                                    ],
-                                    "type": "line"
-                                },
-                                {
-                                    "p0": [
-                                        9.005,
-                                        -44.32
-                                    ],
-                                    "p1": [
-                                        9.005,
-                                        -50.0
-                                    ],
-                                    "type": "line"
-                                }
-                            ],
-                            "_geom_depth": 50.0,
-                            "_geom_first_Cylinder_diameter": 9.0,
-                            "_geom_positions": [
-                                13.13121202347472,
-                                -2.039008078179279
-                            ],
-                            "_geom_thread_depth": 0.0,
-                            "_geom_thread_hole_diameter": 0.0,
-                            "_geom_thread_pitch": 0.0,
-                            "_geom_upper_level": 0.0,
-                            "_group_id": "",
-                            "_positions_format": "VFrmt_XY",
-                            "_standard": "ANSI Metric",
-                            "_tech_delta_depth": 0.0,
-                            "_tech_depth": 0.0,
-                            "_tech_depth_type": "DrMCT_CutterTip",
-                            "_tech_depth_type_val": 0.0,
-                            "_tech_is_half_depth": false,
-                            "_tech_positions": [
-                                13.13121202347472,
-                                -2.039008078179279
-                            ],
-                            "_tech_upper_level": 0.0,
-                            "_topology_type": "HR_hwCounterBoreThru"
-                        }
-                    ],
-                    "type": "",
-                    "usage_index": 0,
-                    "vals": [
-                        13.13121223449707,
-                        -2.039008140563965
-                    ],
-                    "vals_type": "VFrmt_XY",
-                    "ver": 1
-                },
-                "home_MAC": 2,
-                "home_matrix": [
-                    0.0,
-                    1.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    -1.0,
-                    25.0,
-                    -1.0,
-                    0.0,
-                    -0.0,
-                    -25.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "home_number": 2,
-                "home_position": 1,
-                "home_vParallelHomeNumbers": [
-                    1
-                ],
-                "job_depth": 50.0,
-                "job_feed": 300.0,
-                "job_feed_unit": "mm/min",
-                "job_file_name": "JA32385",
-                "job_group_name": "",
-                "job_holeWzrd_id": 0,
-                "job_is_from_HR": false,
-                "job_machine_type": "MILLING",
-                "job_number": 4,
-                "job_spin": 3500.0,
-                "job_spin_unit": "rpm",
-                "job_upper_level": 0.0,
-                "max_feed": 12699.9998092651,
-                "max_power": 14.9999712,
-                "max_spin": 10000.0,
-                "name": "D_drill5",
-                "rapid": 19049.9997138977,
-                "thread_mill": null,
-                "tool": {
-                    "lengthParameters": [
-                        {
-                            "name": "AD",
-                            "unit": "mm",
-                            "value": 9.0
-                        },
-                        {
-                            "name": "CL",
-                            "unit": "mm",
-                            "value": 24.0
-                        },
-                        {
-                            "name": "D",
-                            "unit": "mm",
-                            "value": 9.0
-                        },
-                        {
-                            "name": "SD",
-                            "unit": "mm",
-                            "value": 9.0
-                        },
-                        {
-                            "name": "SL",
-                            "unit": "mm",
-                            "value": 30.0
-                        },
-                        {
-                            "name": "TL",
-                            "unit": "mm",
-                            "value": 80.0
-                        }
-                    ],
-                    "manufacturer": "",
-                    "mfc_catalog_number": "",
-                    "parameters": [
-                        {
-                            "name": "A",
-                            "value": 118.0
-                        },
-                        {
-                            "name": "HelicalAngle",
-                            "value": 45.0
-                        },
-                        {
-                            "name": "SA",
-                            "value": 0.0
-                        }
-                    ],
-                    "tool_description": "",
-                    "tool_type": "TOOL_DRILL",
-                    "ver": 1
-                },
-                "toolPath": [],
-                "type": "NC_DRILL_OLD",
-                "ver": 1
-            },
-            {
-                "coolant": {
-                    "Machine": {
-                        "Air_Active": 0,
-                        "Bed_rinsing": 0,
-                        "Flood": 0,
-                        "Flood_HP": 0,
-                        "Flood_LP": 0,
-                        "Flood_Val": 0,
-                        "Flood_fVal": 0.0,
-                        "Mist": 0,
-                        "Mist_HP": 0,
-                        "Mist_LP": 0,
-                        "Mist_Val": 0,
-                        "Mist_fVal": 0.0
-                    },
-                    "Turret": {
-                        "Air_Active": 0,
-                        "Air_Through_Spindle": 0,
-                        "Flood": 0,
-                        "Flood_HP": 0,
-                        "Flood_LP": 0,
-                        "Flood_Val": 0,
-                        "Flood_fVal": 0.0,
-                        "IdDvice": 0,
-                        "MQL": 0,
-                        "Mist": 0,
-                        "Mist_HP": 0,
-                        "Mist_LP": 0,
-                        "Mist_Val": 0,
-                        "Mist_fVal": 0.0,
-                        "MqVal": 0.0,
-                        "Through_Tool": 0,
-                        "Through_Tool_HP": 0,
-                        "Through_Tool_LP": 0,
-                        "Through_Tool_MP": 0,
-                        "Through_Tool_Val": 0,
-                        "Through_Tool_fVal": 0.0
-                    }
-                },
-                "drill": null,
-                "geometry": {
-                    "name": "contour2",
-                    "poly_arcs": [
-                        [
-                            {
-                                "a0": 0.0,
-                                "c": [
-                                    22.960991921820717,
-                                    -11.868787976525276
-                                ],
-                                "p0": [
-                                    31.96599192182072,
-                                    -11.868787976525276
-                                ],
-                                "p1": [
-                                    31.96599192182072,
-                                    -11.868787976525276
-                                ],
-                                "r": 9.005000000000003,
-                                "sweep": 6.283185307179586,
-                                "type": "arc"
-                            }
-                        ]
-                    ],
-                    "type": "",
-                    "usage_index": 0,
-                    "vals": [
-                        22.960991921820717,
-                        -11.868787976525276,
-                        9.005000000000003
-                    ],
-                    "vals_type": "VFrmt_XYR",
-                    "ver": 1
-                },
-                "home_MAC": 1,
-                "home_matrix": [
-                    0.0,
-                    -0.0,
-                    -1.0,
-                    50.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    -25.0,
-                    1.0,
-                    -0.0,
-                    0.0,
-                    -25.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "home_number": 1,
-                "home_position": 1,
-                "home_vParallelHomeNumbers": [
-                    2
-                ],
-                "job_depth": 5.679999828338623,
-                "job_feed": 300.0,
-                "job_feed_unit": "mm/min",
-                "job_file_name": "JA18443",
-                "job_group_name": "",
-                "job_holeWzrd_id": 0,
-                "job_is_from_HR": false,
-                "job_machine_type": "MILLING",
-                "job_number": 5,
-                "job_spin": 4000.0,
-                "job_spin_unit": "rpm",
-                "job_upper_level": 0.0,
-                "max_feed": 12699.9998092651,
-                "max_power": 14.9999712,
-                "max_spin": 10000.0,
-                "name": "F_contour2",
-                "rapid": 19049.9997138977,
-                "thread_mill": null,
-                "tool": {
-                    "lengthParameters": [
-                        {
-                            "name": "AD",
-                            "unit": "mm",
-                            "value": 9.0
-                        },
-                        {
-                            "name": "CH",
-                            "unit": "mm",
-                            "value": 0.0
-                        },
-                        {
-                            "name": "CL",
-                            "unit": "mm",
-                            "value": 24.0
-                        },
-                        {
-                            "name": "D",
-                            "unit": "mm",
-                            "value": 9.0
-                        },
-                        {
-                            "name": "SD",
-                            "unit": "mm",
-                            "value": 9.0
-                        },
-                        {
-                            "name": "SL",
-                            "unit": "mm",
-                            "value": 30.0
-                        },
-                        {
-                            "name": "TL",
-                            "unit": "mm",
-                            "value": 80.0
-                        }
-                    ],
-                    "manufacturer": "",
-                    "mfc_catalog_number": "",
-                    "parameters": [
-                        {
-                            "name": "HelicalAngle",
-                            "value": 45.0
-                        },
-                        {
-                            "name": "RMPX",
-                            "value": 0.0
-                        },
-                        {
-                            "name": "SA",
-                            "value": 0.0
-                        }
-                    ],
-                    "tool_description": "",
                     "tool_type": "TOOL_END_MILL",
                     "ver": 1
                 },
@@ -1271,5 +868,5 @@
     },
     "event_name": "close_part",
     "format": 0.0,
-    "timestamp": "1741175651"
+    "timestamp": "1741774439"
 }

@@ -1,7 +1,6 @@
 import os
-import sys
 
-from Process_Jobs import process_non_drilling_jobs, process_drilling_jobs
+from Process_Jobs import process_jobs
 from Utilities_and_Cosmetics import read_json, validate_job
 
 
@@ -43,6 +42,7 @@ topologies_dict = {} # Holds all the different topologies
 dir_path = 'C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/JSONs'
 
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
+non_drilling_types = ["NC_PROFILE", "NC_CHAMFER"]
 
 ### Processing loop ###
 
@@ -59,23 +59,32 @@ for part_name in os.listdir(dir_path):
         is_inch = 1 if (data["event_data"]["part"]["is_inch"]==True) else 0
 
         # Going over all jobs in the part
-
         for job in data["event_data"]["jobs"]:
-          # # If the data is in inch, converting it to mm
-          # if is_inch:
-          #   job = convert_json_units(job)
+            # # If the data is in inch, converting it to mm
+            # if is_inch:
+            #   job = convert_json_units(job)
 
-          # True if the job is one of the drilling jobs
-          if job["type"] in drilling_types:
-            validate_job(job, True) # sending True because it's a drilling job
+            # Making sure all the relevant fields in the JSON exist and are correct
+            validate_job(job)
             # Checking if the job is not pre-drilling for creating pockets
             if "recognized_holes_groups" in job['geometry']:
-              process_drilling_jobs(job, part_name, topologies_dict)
+                # Processing the job
+                process_jobs(job, part_name, topologies_dict)
 
-          else:
-            # The job is NOT a drilling job - for now, refers to Profile and Chamfer
-            validate_job(job, False) # sending False because it's NOT a drilling job
-            process_non_drilling_jobs(job, topologies_dict)
+
+
+
+          # # True if the job is one of the drilling jobs
+          # if job["type"] in drilling_types:
+          #   validate_job(job) # sending True because it's a drilling job
+          #   # Checking if the job is not pre-drilling for creating pockets
+          #   if "recognized_holes_groups" in job['geometry']:
+          #     process_drilling_jobs(job, part_name, topologies_dict)
+          #
+          # else:
+          #   # The job is NOT a drilling job - for now, refers to Profile and Chamfer
+          #   validate_job(job) # sending False because it's NOT a drilling job
+          #   process_non_drilling_jobs(job, topologies_dict)
 
 
 

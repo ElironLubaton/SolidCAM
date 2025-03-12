@@ -77,43 +77,6 @@ def rotation_translation(home_matrix):
     return rotation_mat, translation_vec
 
 
-def compare_coordinates(new_center, existing_centers, hole_depth, home_number, parallel_home_numbers):
-    """
-    This function compares (x,y,z) points in order to discern if two hole centers
-    refer to the SAME hole by using the following conditions:
-    1 - If the two holes centers (x,y,z) coordinates are the same.
-    2 - If the distance between the two holes centers equals the hole's depth.
-
-    *Note - This function is used in order to deal with cases where a hole is being worked
-     different MACs (which are parallel).
-
-    Args:
-      new_center: Tuple containing the center we're checking.
-      existing_centers: Set containing the hole's group exisiting centers.
-      hole_depth: Int containing the hole's depth
-      home_number: Int containing the new job's home number
-      parallel_home_numbers: List containing the existing job parallel home numbers
-
-    Returns:
-      True if the two hole centers refer to DIFFERENT holes.
-      False if the two hole centers refer to the SAME hole.
-    """
-    # 1 - Checking if the exact same coordinates already exist
-    if new_center in existing_centers:
-        return False
-
-    # Going over on all the existing points in the hole group
-    for existing_center in existing_centers:
-        # Checking if the home numbers are parallel
-        if home_number in parallel_home_numbers:
-            # Checking if the distance between the centers equals the hole's depth
-            centers_distance = np.linalg.norm(np.array(new_center) - np.array(existing_center))
-            # If true, the two centers refer to the same hole, so return False
-            if abs(centers_distance - hole_depth) <= tolerance:
-                return False
-
-    return True
-
 
 def compare_geometries(new_geometry, existing_geometry):
     """
@@ -172,10 +135,50 @@ def compare_geometries(new_geometry, existing_geometry):
             # 5.3 - Checking if the depths are the same. If not, then geometries are NOT the same
             new_geom_depth = abs(new_geometry[i]["p0"][1] - new_geometry[i]["p1"][1])
             existing_geom_depth = abs(existing_geometry[i]["p0"][1] - existing_geometry[i]["p1"][1])
-            if new_geom_depth != existing_geom_depth:
+            if abs(new_geom_depth - existing_geom_depth) > tolerance:
                 return False
-
     # If we got here, then geometries are the same
     return True
+
+
+def compare_coordinates(new_center, existing_centers, hole_depth, home_number, parallel_home_numbers):
+    """
+    This function compares (x,y,z) points in order to discern if two hole centers
+    refer to the SAME hole by using the following conditions:
+    1 - If the two holes centers (x,y,z) coordinates are the same.
+    2 - If the distance between the two holes centers equals the hole's depth.
+
+    *Note - This function is used in order to deal with cases where a hole is being worked
+     different MACs (which are parallel).
+
+    Args:
+      new_center: Tuple containing the center we're checking.
+      existing_centers: Set containing the hole's group exisiting centers.
+      hole_depth: Int containing the hole's depth
+      home_number: Int containing the new job's home number
+      parallel_home_numbers: List containing the existing job parallel home numbers
+
+    Returns:
+      True if the two hole centers refer to DIFFERENT holes.
+      False if the two hole centers refer to the SAME hole.
+    """
+    # 1 - Checking if the exact same coordinates already exist
+    if new_center in existing_centers:
+        return False
+
+    # Going over on all the existing points in the hole group
+    for existing_center in existing_centers:
+        # Checking if the home numbers are parallel
+        if home_number in parallel_home_numbers:
+            # Checking if the distance between the centers equals the hole's depth
+            centers_distance = np.linalg.norm(np.array(new_center) - np.array(existing_center))
+            # If true, the two centers refer to the same hole, so return False
+            if abs(centers_distance - hole_depth) <= tolerance:
+                return False
+
+    return True
+
+
+
 
 
