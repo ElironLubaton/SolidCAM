@@ -165,9 +165,10 @@ def validate_job(job):
                         errors.append("thread_mill field is invalid")
 
                     # Checking again the thread fields, but also checking if their value is not zero
+                    # Note - the next 'for loop' will result in error if one of the fields are zero
                     fields_not_none = ["_geom_thread_depth", "_geom_thread_diameter", "_geom_thread_pitch"]
                     for field in fields_not_none:
-                        if holes_group_info.get(field) is None or len(holes_group_info.get(field)) == 0:
+                        if holes_group_info.get(field) is None or holes_group_info.get(field) == 0:
                             errors.append(f"{field} field is invalid")
 
     # Printing the errors if there are any
