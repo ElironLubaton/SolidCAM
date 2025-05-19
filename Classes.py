@@ -144,7 +144,8 @@ class Job:
     self.tool_parameters = job['tool']            # Tool parameters
     self.job_depth = job['job_depth']             # How deep the tool goes in, NOT taking into account the tool's tip
     self.tool_depth = None                        # How deep the tool goes in, taking into account the tool's tip
-    self.thread_mill_params = job["thread_mill"]  # Thread Milling parameters - not None only on Thread Milling jobs
+    self.thread_mill_params = job["thread_mill"]  # Thread Milling parameters - not None only on this job
+    self.op_params = job["operation_parameters"]  # Profile & Chamfer parameters - not None only on this jobs
 
     self.home_number = job['home_number']
     self.parallel_home_numbers = job['home_vParallelHomeNumbers']
@@ -154,6 +155,7 @@ class Job:
     self.drill_gcode_name =     None
     self.drill_params =         None
     self.cycle_is_using =       None
+    self.deep_drill_segments =  None  # Multi-depth Drilling parameters - not None only on Multi-depth Drilling jobs.
     self.depth_diameter_value = None  # To which diameter of the head the tool gets inside the material
     self.depth_type =           None  # Either Cutter tip, Full diameter, Diameter value
     self.decide_drill_params(job, holes_group_info) # Assign drill-related attributes depending on job type
@@ -209,6 +211,10 @@ class Job:
           self.depth_type = "Full_Diameter"
         elif drill["depth_is_tool_Diameter"]:
           self.depth_type = "Tool_Diameter"
+
+        # True if it's Multi-Depth Drilling job
+        if self.job_type == "NC_DRILL_DEEP":
+          self.deep_drill_segments = drill.get("deepDrillSegments")
 
 
 
