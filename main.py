@@ -11,29 +11,11 @@ This notebook is used under the assumption that the JSON file is valid, where va
 The data is being processed as follows:  
 1 - Iterating on the each part's jobs.
 
-2 - Dividing the jobs to either drilling jobs or non-drilling jobs.  
+2 - Creating a dictionary that holds all the topologies.
 
-3 - Creating a dictionary that holds all the topologies.
+3 - Assigning holes groups to their topology.  
 
-4 - Assigning holes groups to their topology.  
-
-5 - Assigning jobs by the order they have been performed to their hole group.
-"""
-
-
-
-"""
-The main loop goes over all the parts, and processes each part.
-A part can be processed by either two functions:
-  1. process_drilling_jobs: as its name suggests, it processes only drilling jobs -
-     jobs that contain "drill" field in their JSON.
-     *Note that if a job contains "drill" field, but 'recognized_holes_groups' field is missing,
-     this job is probably a pre-drilling for a pocket.
-
-  2. process_non_drilling_jobs: as its name suggests, it processes jobs that
-     doesn't involve drilling.
-     Such jobs ('Profile' for example) does NOT contain any hole information. They contain
-     only the values of the holes they are working on - 'vals' field, under 'geometry' field.
+4 - Assigning jobs by the order they have been performed to their hole group.
 """
 
 
@@ -67,7 +49,8 @@ for part_name in os.listdir(dir_path):
             # Making sure all the relevant fields in the JSON exist and are correct
             validate_job(job)
             # Checking if the job is not pre-drilling for creating pockets
-            if "recognized_holes_groups" in job['geometry']:
+            if job["geometry"].get("recognized_holes_groups") is not None:
+            # if "recognized_holes_groups" in job['geometry']:
                 # Processing the job
                 process_jobs(job, part_name, topologies_dict)
 

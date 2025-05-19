@@ -6,10 +6,10 @@ import difflib
 from Utilities_and_Cosmetics import read_json
 
 # Directory path to the JSON files
-dir_path = 'C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/JSON'
+dir_path = 'C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/JSONs'
 
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
-
+non_drilling_types = ["NC_PROFILE", "NC_CHAMFER"]
 
 
 """## Verfication Functions"""
@@ -28,6 +28,7 @@ If a job is classified as invalid, it is maybe because it is a pre-drilling for
 a pocket, so until I'm sure the data collection tool works well, I have to check
 these cases BY HAND.
 """
+
 
 # These two lines used for printing with bold font
 bold_s = '\033[1m'  # Start to write in bold
@@ -113,12 +114,12 @@ def categorize_json_files(directory):
     return with_drill, without_drill
 
 
-# Example usage
-directory = "/content/test"  # Replace with your directory containing the JSON files
-with_drill, without_drill = categorize_json_files(directory)
-
-print("Files with 'drill':", with_drill)
-print("Files without 'drill':", without_drill)
+# # Example usage
+# directory = "/content/test"  # Replace with your directory containing the JSON files
+# with_drill, without_drill = categorize_json_files(directory)
+#
+# print("Files with 'drill':", with_drill)
+# print("Files without 'drill':", without_drill)
 
 
 

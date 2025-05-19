@@ -72,12 +72,6 @@ def process_jobs(job, part_name, topologies_dict):
             print(f"Topology mask is NOT valid")
             break
 
-        # # Checking if the mask or its reverse already exist. If true, create new Topology instance
-        # if int(str(topology_mask)[::-1]) in topologies_dict:
-        #     topology_mask = int(str(topology_mask)[::-1])
-        # elif topology_mask not in topologies_dict:
-        #     topologies_dict[topology_mask] = Topology(topology, topology_mask)
-
         # Checking if the mask or its reverse already exist. If true, create new Topology instance
         if topology_mask not in topologies_dict and int(str(topology_mask)[::-1]) not in topologies_dict:
             topologies_dict[topology_mask] = Topology(topology, topology_mask)
@@ -90,6 +84,10 @@ def process_jobs(job, part_name, topologies_dict):
 
         # Adding the job to hole group
         holes_group.add_job(job, new_coordinates, holes_group_info)
+
+
+
+
 
 # def process_non_drilling_jobs(job, topologies_dict):
 #   """

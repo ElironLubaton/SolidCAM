@@ -73,7 +73,7 @@ class Mask(Enum):
     # I can access the strings by using: "Mask(number 1-4).name"
 
 
-def validate_job(job, part_name):
+def validate_job(job):
     """
     This function purpose is for verifying that all the JSON fields that are being used are either:
     1 - Existing
@@ -124,11 +124,10 @@ def validate_job(job, part_name):
             geometry = job["geometry"]
             if geometry.get("poly_arcs") is None or len(geometry.get("poly_arcs"))==0:   # Checking poly_arcs field
                 errors.append("geometry.poly_arcs field is invalid")
-            if job_type == "NC_PROFILE" or job_type == "NC_CHAMFER":
-                if job.get("operation_parameters") is None:                        # Checking operation_parameters field
-                    errors.append("operation_parameters field is invalid")
-                elif "Unsupported type" in job.get("operation_parameters").values(): # Checking if there is a value with "Unsupported type"
-                    errors.append("Unsupported type found in operation_parameters")
+            if job.get("operation_parameters") is None:                        # Checking operation_parameters field
+                errors.append("operation_parameters field is invalid")
+            elif "Unsupported type" in job.get("operation_parameters").values(): # Checking if there is a value with "Unsupported type"
+                errors.append("Unsupported type found in operation_parameters")
 
         if job["geometry"].get("recognized_holes_groups") is None:                        # Checking recognized_holes_groups field
             errors.append("recognized_holes_groups field is invalid OR it's a pre-drilling operation")
