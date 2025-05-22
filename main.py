@@ -47,7 +47,7 @@ for part_name in os.listdir(dir_path):
             #   job = convert_json_units(job)
 
             # Making sure all the relevant fields in the JSON exist and are correct
-            validate_job(job)
+            validate_job(job, part_name)
             # Checking if the job is not pre-drilling for creating pockets
             if job["geometry"].get("recognized_holes_groups") is not None:
             # if "recognized_holes_groups" in job['geometry']:

@@ -73,7 +73,7 @@ class Mask(Enum):
     # I can access the strings by using: "Mask(number 1-4).name"
 
 
-def validate_job(job):
+def validate_job(job, part_name):
     """
     This function purpose is for verifying that all the JSON fields that are being used are either:
     1 - Existing
