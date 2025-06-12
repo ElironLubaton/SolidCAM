@@ -130,6 +130,23 @@ class HoleGroup:
     print('')
 
 
+
+class Hole:
+  """
+  An object of this class holds a hole - it's position, tolerance, and jobs performed on it.
+  """
+
+  def __init__(self, new_coordinates, tolerance_type, upper_tolerance, lower_tolerance):
+    self.position = new_coordinates
+    self.tolerance_type = tolerance_type
+    self.upper_tolerance = upper_tolerance
+    self.lower_tolerance = lower_tolerance
+    self.jobs = []                            # The jobs performed on this hole group by the order they were performed
+    self.jobs_order = ''                      # A string that holds the order of the jobs
+
+
+
+
 class Job:
   """
   An object of this class holds a job that is done on a hole.
