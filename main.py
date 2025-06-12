@@ -41,6 +41,7 @@ for part_name in os.listdir(dir_path):
         is_inch = 1 if (data["event_data"]["part"]["is_inch"]==True) else 0
 
         # Going over all jobs in the part
+        print(f"part name is: {part_name}")
         for job in data["event_data"]["jobs"]:
             # # If the data is in inch, converting it to mm
             # if is_inch:
@@ -53,6 +54,8 @@ for part_name in os.listdir(dir_path):
             # if "recognized_holes_groups" in job['geometry']:
                 # Processing the job
                 process_jobs(job, part_name, topologies_dict)
+        print(f"\n***********************\n")
+
 
 
 
