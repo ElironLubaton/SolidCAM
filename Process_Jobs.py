@@ -61,10 +61,11 @@ def process_jobs(job, part_name, topologies_dict):
 
     # Loops on the holes groups in each job
     for holes_group_info in job['geometry']["recognized_holes_groups"]:
+        # Extracting the coordinates based on the coordinates format
         new_coordinates = extract_coordinates(holes_group_info, rotation_mat, translation_vec)
 
         # Checking if the topology type is a valid string, and Cosmetics
-        topology = topology_sort(holes_group_info["_topology_type"])
+        topology_type = topology_sort(holes_group_info["_topology_type"])
         # Saving the mask - a set of number that defines the topology
         topology_mask = int(holes_group_info["_geomShapeMask"])
         # True if 'topology_type' is an empty string
@@ -72,18 +73,21 @@ def process_jobs(job, part_name, topologies_dict):
             print(f"Topology mask is NOT valid")
             break
 
+        # Saving the reversed topology mask
+        reversed_topology_mask = int(str(topology_mask)[::-1])
         # Checking if the mask or its reverse already exist. If true, create new Topology instance
-        if topology_mask not in topologies_dict and int(str(topology_mask)[::-1]) not in topologies_dict:
-            topologies_dict[topology_mask] = Topology(topology, topology_mask)
+        if topology_mask not in topologies_dict and reversed_topology_mask not in topologies_dict:
+            topologies_dict[topology_mask] = Topology(topology_type, topology_mask)
         # If got here, then checking if the reverse mask already exists - If true, then save the reversed mask
-        elif int(str(topology_mask)[::-1]) in topologies_dict:
-            topology_mask = int(str(topology_mask)[::-1])
+        elif reversed_topology_mask in topologies_dict:
+            topology_mask = reversed_topology_mask
 
         # If it's the first time encountering that geometry shape & holes, add it
-        holes_group, new_group_flag = topologies_dict[topology_mask].add_hole_group(job, new_coordinates, holes_group_info, part_name)
+        topologies_dict[topology_mask].add_hole_group(job, new_coordinates, holes_group_info, part_name)
+        # holes_group, new_hole = topologies_dict[topology_mask].add_hole_group(job, new_coordinates, holes_group_info, part_name)
 
         # Adding the job to hole group
-        holes_group.add_job(job, new_coordinates, holes_group_info)
+        # holes_group.add_job(job, new_coordinates, holes_group_info)
 
 
 

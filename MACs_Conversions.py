@@ -159,12 +159,12 @@ def compare_coordinates(new_center, existing_centers, hole_depth, home_number, p
       parallel_home_numbers: List containing the existing job parallel home numbers
 
     Returns:
-      True if the two hole centers refer to DIFFERENT holes.
+      True if the two hole centers refer to DIFFERENT holes, and the new_center coordinates
       False if the two hole centers refer to the SAME hole.
     """
     # 1 - Checking if the exact same coordinates already exist
     if new_center in existing_centers:
-        return False
+        return False, new_center
 
     # Going over on all the existing points in the hole group
     for existing_center in existing_centers:
@@ -174,9 +174,9 @@ def compare_coordinates(new_center, existing_centers, hole_depth, home_number, p
             centers_distance = np.linalg.norm(np.array(new_center) - np.array(existing_center))
             # If true, the two centers refer to the same hole, so return False
             if abs(centers_distance - hole_depth) <= tolerance:
-                return False
+                return False, existing_center
 
-    return True
+    return True, None
 
 
 
