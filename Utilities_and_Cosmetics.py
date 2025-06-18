@@ -177,7 +177,7 @@ def validate_job(job, part_name):
     # Printing the errors if there are any
     if errors:
         # print("\n")
-        print(f"Job name: {job['name']} | Job number: ({job["job_number"]}) | Part name:{part_name}")
+        print(f"Job name: {job['name']} | Job type: {job['type']} | Job number: ({job["job_number"]}) | Part name:{part_name}")
         for error in errors:
             print(error)
         print("\n")
