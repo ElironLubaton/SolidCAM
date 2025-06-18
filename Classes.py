@@ -12,9 +12,9 @@ bold_e = '\033[0m' # End to write in bold
 
 class Topology:
   """ An object of this class holds all the holes in the specified topology."""
-  def __init__(self, topology, topology_mask):
+  def __init__(self, topology_type, topology_mask):
     """ topology_mask - 1:Plane,  2:Cylinder,  3:Conic,  4:Chamfer """
-    self.topology = topology           # String containing topology's name (e.g, CounterBore)
+    self.topology = topology_type           # String containing topology's name (e.g, CounterBore)
     self.topology_mask = topology_mask # Int containing topology's mask
     self.holes_groups = []             # The hole groups that belong to this topology
     self.jobs_orders_dict = dict()     # Used for printing the legend in plots
@@ -26,31 +26,62 @@ class Topology:
     in the hole group.
 
     Returns:
-      group: HoleGroup instance, whether exists or not
-      False: If the hole group is NOT new
-      TrueL  If the hole group is new
+      group: HoleGroup instance - existing one, or a new one
     """
     new_geom_shape = holes_group_info["_geom_ShapePoly"]
+    new_job = None
 
     # Going over on all existing hole groups and check if the "new" geometry shape already exists
-    for group in self.holes_groups:
+    for existing_group in self.holes_groups:
       # If true, then geometry shape or its reverse already exists, so just updating number of centers
-      if compare_geometries(new_geom_shape, group.geom_shape):
+      if compare_geometries(new_geom_shape, existing_group.geom_shape):
         # Going over the centers in the new coordinates in order to update centers
         for new_center in new_coordinates:
           # Going over all the jobs inside the hole group
-          for existing_job in group.jobs:
+          for existing_job in existing_group.jobs:
             # Add the new center if he is really new, or he already exists inside the hole group
-            if compare_coordinates(new_center, existing_job.centers, group.hole_depth,
-                                   job["home_number"], existing_job.parallel_home_numbers):
-              group.centers.add(new_center)
-        # returning the updated existing group
-        return group, False
+            not_exist_flag, existing_center = compare_coordinates(new_center, set(existing_job.holes.keys()),
+                                                     existing_group.hole_depth,job["home_number"],
+                                                     existing_job.parallel_home_numbers)
+            # If true, the new_center doesn't exist
+            if not_exist_flag:
+              new_hole = Hole(new_center)                       # Creating a new Hole instance
+              new_job = new_hole.add_job(job, holes_group_info) # Assigning the job to the new Hole instance
+              existing_group.holes[new_center] = new_hole       # Adding the new Hole instance to the existing holes group
+              new_job.centers.add(new_center)                   # Adding the new_center to the job's centers
+              existing_group.centers.add(new_center)            # Adding the new_center to the existing holes group centers
+            else: # The center already exists
+              existing_group.holes[existing_center].add_job(job, holes_group_info)
 
-    # The geometry shape doesn't exist, so we create a new instance of HoleGroup
+            # if compare_coordinates(new_center, list(existing_job.holes.keys()), existing_group.hole_depth,
+            #                        job["home_number"], existing_job.parallel_home_numbers):
+            #   existing_group.centers.add(new_center)
+            #   # Creating a new Hole instance
+            #   new_hole = Hole(new_center)
+            #   # Assigning the job to the new hole
+            #   new_job = new_hole.add_job(job, holes_group_info)
+            #   # Adding the new hole to the existing hole group
+            #   existing_group.holes[new_center] = new_hole  # Adding the new_hole to the new_holes_group
+
+        # returning the updated existing group
+        return existing_group
+
+
+    # The geometry shape doesn't exist
+    # Creating a new instance of HoleGroup
     new_group = HoleGroup(new_coordinates, new_geom_shape, holes_group_info, part_name)
+
+    # For each hole we create a new Hole instance
+    for new_center in new_coordinates:
+      new_hole = Hole(new_center)                       # Creating a new Hole instance
+      new_job = new_hole.add_job(job, holes_group_info) # Assigning the job to the new hole
+      new_group.holes[new_center] = new_hole            # Adding the new_hole to the new_holes_group
+
+    # Adding the new job to the new group
+    new_group.jobs.append(new_job)
+    # Adding the new hole group to the Topology
     self.holes_groups.append(new_group)
-    return new_group, True
+
 
   def update_jobs_orders_dict(self):
     """
@@ -67,53 +98,66 @@ class HoleGroup:
   """
   An object of this class holds all the holes in the same hole group, and the
   description of the hole.
+
+  *Note: 'self.jobs' field holds all the jobs done on the holes that belong to that hole group,
+          but NOT all jobs necessarily were performed on all the holes (E.g, a hole that has a lower tolerance,
+          so it has one more job performed on it).
   """
   def __init__(self, new_coordinates, geom_shape, holes_group_info, part_name):
+    self.holes = {}                      # A dict that holds all the holes in that hole group
     self.centers = set(new_coordinates)  # The (x,y) coordinates of holes in this hole group
-    self.jobs = []                # The jobs performed on this hole group by the order they were performed
-    self.jobs_order = ''          # A string that holds the order of the jobs
-    self.geom_shape = geom_shape  # Geomertric shape of the holes in this hole group
+    self.jobs = []                       # All the jobs performed on this hole group
+    self.jobs_order = ''               # A string that holds the order of the jobs
+    self.geom_shape = geom_shape         # Geomertric shape of the holes in this hole group
     self.part_name            = part_name
     self.diameter             = abs(2*min(item["p0"][0] for item in geom_shape)) # The smallest diameter of the holes
-    self.hole_depth           = holes_group_info["_geom_depth"]       # Hole's depth
-    self.thread_depth         = holes_group_info["_geom_thread_depth"]    # Hole's thread depth
-    self.thread_hole_diameter = holes_group_info["_geom_thread_hole_diameter"] # Hole's thread diameter
-    self.thread_pitch         = holes_group_info["_geom_thread_pitch"]    # Hole's thread pitch
+    self.hole_depth           = holes_group_info["_geom_depth"]                  # Hole's depth
+    self.thread_depth         = holes_group_info["_geom_thread_depth"]           # Hole's thread depth
+    self.thread_hole_diameter = holes_group_info["_geom_thread_hole_diameter"]   # Hole's thread diameter
+    self.thread_pitch         = holes_group_info["_geom_thread_pitch"]           # Hole's thread pitch
     self.fastener_size        = holes_group_info["_fastener_size"]
     self.standard             = holes_group_info["_standard"]
 
 
-  def add_job(self, job, new_coordinates, holes_group_info):
-    """
-    This method assigns a job to a hole group ONLY if the same exact job doesn't
-    already exist - we check for existence via comparison of job depth, job type,
-    tool type, and tool parameters.
-    """
+  # def add_job(self, job, new_coordinates, holes_group_info):
+  #   """
+  #   This method assigns a job to a hole group ONLY if the same exact job doesn't
+  #   already exist - we check for existence via comparison of job depth, job type,
+  #   tool type, and tool parameters.
+  #   """
+  #
+  #   tool_type = process_tool_type_name(job['tool']['tool_type']) # Cosmetics
+  #   job_depth = job['job_depth']
+  #   job_type = job['type']
+  #   tool_parameters = job['tool']
+  #   if "ver" in tool_parameters:     # Removing unnecessary field from json: "ver" under tool_parameters
+  #     tool_parameters.pop("ver")
+  #
+  #   # Note - In Multi-Axis Drilling jobs, the job depth will be defined by the tech_depth inside the hole group info
+  #   if job["type"] == "NC_JOB_MW_DRILL_5X":
+  #     job_depth = holes_group_info["_tech_depth"]
+  #
+  #   # Checking if the job already exists - Going over all the existing jobs in that hole group
+  #   for existing_job in self.jobs:
+  #     # if true, then job already exists, so existing the function
+  #     if (existing_job.job_depth       == job_depth and      # Same job depth
+  #         existing_job.job_type        == job_type  and      # Same job type
+  #         existing_job.tool_type       == tool_type and      # Same tool type
+  #         existing_job.tool_parameters == tool_parameters):  # Same tool parameters
+  #       return
+  #
+  #   # If got here, then the job is new
+  #   new_job = Job(job, tool_type, new_coordinates, holes_group_info)
+  #   self.jobs.append(new_job)
+  #   self.jobs_order += f"{new_job.job_type} - {new_job.tool_type} | "
 
-    tool_type = process_tool_type_name(job['tool']['tool_type']) # Cosmetics
-    job_depth = job['job_depth']
-    job_type = job['type']
-    tool_parameters = job['tool']
-    if "ver" in tool_parameters:     # Removing unnecessary field from json: "ver" under tool_parameters
-      tool_parameters.pop("ver")
 
-    # Note - In Multi-Axis Drilling jobs, the job depth will be defined by the tech_depth inside the hole group info
-    if job["type"] == "NC_JOB_MW_DRILL_5X":
-      job_depth = holes_group_info["_tech_depth"]
-
-    # Checking if the job already exists - Going over all the existing jobs in that hole group
-    for existing_job in self.jobs:
-      # if true, then job already exists, so existing the function
-      if (existing_job.job_depth       == job_depth and      # Same job depth
-          existing_job.job_type        == job_type  and      # Same job type
-          existing_job.tool_type       == tool_type and      # Same tool type
-          existing_job.tool_parameters == tool_parameters):  # Same tool parameters
-        return
-
-    # If got here, then the job is new
-    new_job = Job(job, tool_type, new_coordinates, holes_group_info)
-    self.jobs.append(new_job)
-    self.jobs_order += f"{new_job.job_type} - {new_job.tool_type} | "
+  def add_tolerance(self, tolerance_type, upper_tolerance, lower_tolerance):
+    """ Adding tolerances for each hole according to the EXCEL files from Doron """
+    for hole in self.holes:
+      hole.tolerance = tolerance_type
+      hole.upper_tolerance = upper_tolerance
+      hole.lower_tolerance = lower_tolerance
 
 
   def print(self):
@@ -124,10 +168,20 @@ class HoleGroup:
     print(f"Holes centers: {{{', '.join(f'({x}, {y}, {z})' for x, y, z in self.centers)}}}")  # For debugging
     print(f"Diameter: {self.diameter}")
     print(f"Depth: {round(self.hole_depth, 3)}")
-    print(f"{bold_s}{len(self.jobs)} jobs total{bold_e} were performed on this hole group.\nThe order they're being exectued:")
-    for i, job in enumerate(self.jobs):
-      print(f"{i+1} - {job}")
-    print('')
+
+    print(f"\nEach hole, and the jobs performed on it:")
+    for _, hole in self.holes.items():
+    # for hole in self.holes:
+      print(f"Hole position at {tuple(float(x) for x in hole.position)}")
+      print(f"Hole tolerance type: {hole.tolerance_type}, upper: {hole.upper_tolerance}, lower: {hole.lower_tolerance}")
+      for i, job in enumerate(hole.jobs):
+        print(f"{i + 1} - {job}")
+      print('')
+
+    # print(f"{bold_s}{len(self.jobs)} jobs total{bold_e} were performed on this hole group.\nThe order they're being exectued:")
+    # for i, job in enumerate(self.jobs):
+    #   print(f"{i+1} - {job}")
+    # print('')
 
 
 
@@ -135,15 +189,24 @@ class Hole:
   """
   An object of this class holds a hole - it's position, tolerance, and jobs performed on it.
   """
-
-  def __init__(self, new_coordinates, tolerance_type, upper_tolerance, lower_tolerance):
+  def __init__(self, new_coordinates):
     self.position = new_coordinates
-    self.tolerance_type = tolerance_type
-    self.upper_tolerance = upper_tolerance
-    self.lower_tolerance = lower_tolerance
-    self.jobs = []                            # The jobs performed on this hole group by the order they were performed
-    self.jobs_order = ''                      # A string that holds the order of the jobs
+    self.tolerance_type = None
+    self.upper_tolerance = None
+    self.lower_tolerance = None
+    self.jobs = []                   # The jobs performed on this hole by the order they were performed
 
+  def add_job(self, job, holes_group_info):
+    """ This method assigns a job to a hole """
+
+    tool_type = process_tool_type_name(job['tool']['tool_type'])  # Cosmetics
+
+    new_job = Job(job, tool_type, holes_group_info)   # Creating a new Job instance
+    new_job.centers.add(self.position)                # Updating the set of centers
+    new_job.holes[self.position] = self               # Updating the holes dictionary
+    self.jobs.append(new_job)                         # Adding the job
+
+    return new_job
 
 
 
@@ -152,8 +215,9 @@ class Job:
   An object of this class holds a job that is done on a hole.
   Each field holds the json's field with the same name.
   """
-  def __init__(self, job, tool_type, new_coordinates, holes_group_info):
-    self.centers = set(new_coordinates)  # The (x,y) coordinates of holes that are being worked by this job
+  def __init__(self, job, tool_type, holes_group_info):
+    self.centers = set()                        # The (x,y) coordinates of holes that are being worked by this job
+    self.holes = {}
     self.job_number = job["job_number"]           # Job's index in SolidCAM
     self.job_name = job['name']                   # Job name as defined by the user
     self.job_type = job['type']                   # Technology used (e.g, 2_5D_Drilling)
@@ -181,7 +245,7 @@ class Job:
 
   def __repr__(self):
     # return 'Job type & Tool type: {}, Job name: {}'.format(f"{self.job_type} - {self.tool_type}", self.job_name)
-    return 'Job type: {}, Tool type: {}, Job name and number: {} ({})'.format(self.job_type, self.tool_type, self.job_name, self.job_number)
+    return 'Job type: {} | Tool type: {} | Job name and number: {} ({})'.format(self.job_type, self.tool_type, self.job_name, self.job_number)
 
 
   # todo need to change this function so it would stop refering drilling and non-drilling separately
@@ -267,8 +331,4 @@ class Job:
     return tool_depth
 
 
-# class DrillingJob(Job):
-#   def __init__(self):
-#     Job.__init__(self)
-#
-# class NonDrillingJob(Job):
+
