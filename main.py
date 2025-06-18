@@ -19,7 +19,7 @@ The data is being processed as follows:
 """
 
 
-topologies_dict = {} # Holds all the different topologies
+topologies_dict = {} # Holds all the different topologies masks
 
 dir_path = 'C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/JSONs'
 
@@ -28,33 +28,99 @@ non_drilling_types = ["NC_PROFILE", "NC_CHAMFER"]
 
 ### Processing loop ###
 
-# Going over on all the parts, and process them
-for part_name in os.listdir(dir_path):
-    # Processing only files that ends with .json
-    if part_name.endswith('.json'):
-        file_path = os.path.join(dir_path, part_name)
+# def processing_loop():
+#     """
+#     This function goes over pair of files: JSON file and a corresponding EXCEL file (which contains
+#     more information on the JSON file).
+#     """
+#     # Going over all subdirectories inside dir_path
+#     for subdir_name in os.listdir(dir_path):
+#         subdir_path = os.path.join(dir_path, subdir_name)
+#
+#         # Skip if not a directory
+#         if not os.path.isdir(subdir_path):
+#             continue
+#
+#         # Initialize file paths
+#         json_file_path = None
+#         excel_file_path = None
+#
+#         # Search for .json and .xls files inside the subdirectory
+#         for file_name in os.listdir(subdir_path):
+#             if file_name.endswith('.json'):
+#                 json_file_path = os.path.join(subdir_path, file_name)
+#             elif file_name.endswith('.xls') or file_name.endswith('.xlsx'):
+#                 excel_file_path = os.path.join(subdir_path, file_name)
+#
+#         if json_file_path is None or excel_file_path is None:
+#             print(f"Missing .json or .xls file in {subdir_name}")
+#             continue
+#
+#         # Read and process the JSON file
+#         data = read_json(json_file_path)
+#
+#         # Checking if the data is in inch or mm
+#         is_inch = 1 if (data["event_data"]["part"]["is_inch"] == True) else 0
+#
+#         # Processing the JSON file - Going over all jobs in the part
+#         print(f"Processing part: {subdir_name}")
+#         for job in data["event_data"]["jobs"]:
+#             # # If the data is in inch, converting it to mm
+#             # if is_inch:
+#             #   job = convert_json_units(job)
+#
+#             # Making sure all the relevant fields in the JSON exist and are correct
+#             validate_job(job, json_file_path)
+#
+#             # Checking if the job is not pre-drilling for creating pockets
+#             if job["geometry"].get("recognized_holes_groups") is not None:
+#                 # Processing the job
+#                 process_jobs(job, json_file_path, topologies_dict)
+#
+#
+#         # Processing the EXCEL file
+#         process_excel_files(excel_file_path)
+#
+#         print(f"\n***********************\n")
 
-        # Read the JSON file
-        data = read_json(file_path)
+def process_excel_files(file_path):
+    return
 
-        # Checking if the data is in inch or mm
-        is_inch = 1 if (data["event_data"]["part"]["is_inch"]==True) else 0
 
-        # Going over all jobs in the part
-        print(f"part name is: {part_name}")
-        for job in data["event_data"]["jobs"]:
-            # # If the data is in inch, converting it to mm
-            # if is_inch:
-            #   job = convert_json_units(job)
+def processing_loop():
+    # Going over on all the parts, and process them
+    for part_name in os.listdir(dir_path):
+        # Processing only files that ends with .json
+        if part_name.endswith('.json'):
+            file_path = os.path.join(dir_path, part_name)
 
-            # Making sure all the relevant fields in the JSON exist and are correct
-            validate_job(job, part_name)
-            # Checking if the job is not pre-drilling for creating pockets
-            if job["geometry"].get("recognized_holes_groups") is not None:
-            # if "recognized_holes_groups" in job['geometry']:
-                # Processing the job
-                process_jobs(job, part_name, topologies_dict)
-        print(f"\n***********************\n")
+            # Read the JSON file
+            data = read_json(file_path)
+
+            # Going over all jobs in the part
+            print(f"part name is: {part_name}")
+            for job in data["event_data"]["jobs"]:
+                # Processing only specific jobs
+                if job["type"] not in drilling_types and job["type"] not in non_drilling_types:
+                    continue
+
+                # # Making sure all the relevant fields in the JSON exist and are correct
+                # validate_job(job, part_name)
+
+                # Checking if the job is not pre-drilling for creating pockets
+                if job["geometry"].get("recognized_holes_groups") is not None:
+                # if "recognized_holes_groups" in job['geometry']:
+                    # Processing the job
+                    process_jobs(job, part_name, topologies_dict)
+            print(f"\n***********************\n")
+
+
+
+
+
+
+processing_loop()
+
 
 
 
@@ -128,6 +194,4 @@ for _ , topology in topologies_dict.items():
 
   for group in topology.holes_groups:
     group.print()
-    diameters += [group.diameter] * len(group.centers)
-    depths += [group.hole_depth] * len(group.centers)
   print("______________________________________________________\n")
