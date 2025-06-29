@@ -14,12 +14,12 @@ class Topology:
   """ An object of this class holds all the holes in the specified topology."""
   def __init__(self, topology_type, topology_mask):
     """ topology_mask - 1:Plane,  2:Cylinder,  3:Conic,  4:Chamfer """
-    self.topology = topology_type           # String containing topology's name (e.g, CounterBore)
-    self.topology_mask = topology_mask # Int containing topology's mask
-    self.holes_groups = []             # The hole groups that belong to this topology
-    self.jobs_orders_dict = dict()     # Used for printing the legend in plots
+    self.topology_mask = topology_mask  # Int containing topology's mask
+    self.topology = topology_type       # String containing topology's name (e.g, CounterBore)
+    self.holes_groups = []              # The hole groups that belong to this topology
+    self.jobs_orders_dict = dict()      # Used for printing the legend in plots
 
-  def add_hole_group(self, job, new_coordinates, holes_group_info, part_name):
+  def add_hole_group(self,job, new_coordinates, holes_group_info, part_name):
     """
     This method creates a new hole group ONLY if the geometric shape of the hole group is new.
     If the geometric shape is not new, we just update the number of the instances
@@ -29,58 +29,34 @@ class Topology:
       group: HoleGroup instance - existing one, or a new one
     """
     new_geom_shape = holes_group_info["_geom_ShapePoly"]
-    new_job = None
+    new_group_flag = True
 
     # Going over on all existing hole groups and check if the "new" geometry shape already exists
     for existing_group in self.holes_groups:
       # If true, then geometry shape or its reverse already exists, so just updating number of centers
       if compare_geometries(new_geom_shape, existing_group.geom_shape):
+        new_group_flag = False
         # Going over the centers in the new coordinates in order to update centers
-        for new_center in new_coordinates:
-          # Going over all the jobs inside the hole group
-          for existing_job in existing_group.jobs:
-            # Add the new center if he is really new, or he already exists inside the hole group
-            not_exist_flag, existing_center = compare_coordinates(new_center, set(existing_job.holes.keys()),
-                                                     existing_group.hole_depth,job["home_number"],
-                                                     existing_job.parallel_home_numbers)
-            # If true, the new_center doesn't exist
-            if not_exist_flag:
-              new_hole = Hole(new_center)                       # Creating a new Hole instance
-              new_job = new_hole.add_job(job, holes_group_info) # Assigning the job to the new Hole instance
-              existing_group.holes[new_center] = new_hole       # Adding the new Hole instance to the existing holes group
-              new_job.centers.add(new_center)                   # Adding the new_center to the job's centers
-              existing_group.centers.add(new_center)            # Adding the new_center to the existing holes group centers
-            else: # The center already exists
-              existing_group.holes[existing_center].add_job(job, holes_group_info)
+        for new_center_coordinates in new_coordinates:
+          # Add the new center if he is really new, or he already exists inside the hole group
+          exist_flag, hole_instance = compare_coordinates(new_center_coordinates, existing_group,
+                                                          job["home_number"], existing_group.hole_depth)
+          if exist_flag:    # If True, the hole object already exists - just add the job
+            hole_instance.add_job(job,holes_group_info)
+          else:             # If False, the hole object does NOT exist - creating a new Hole object, and adding the job
+            existing_group.add_hole(job, holes_group_info, new_center_coordinates)
 
-            # if compare_coordinates(new_center, list(existing_job.holes.keys()), existing_group.hole_depth,
-            #                        job["home_number"], existing_job.parallel_home_numbers):
-            #   existing_group.centers.add(new_center)
-            #   # Creating a new Hole instance
-            #   new_hole = Hole(new_center)
-            #   # Assigning the job to the new hole
-            #   new_job = new_hole.add_job(job, holes_group_info)
-            #   # Adding the new hole to the existing hole group
-            #   existing_group.holes[new_center] = new_hole  # Adding the new_hole to the new_holes_group
+    # If true, then the hole group is new (the geometry shape doesn't exist)
+    if new_group_flag:
+      # Creating a new instance of HoleGroup
+      new_group = HoleGroup(new_geom_shape, holes_group_info, part_name, self)
 
-        # returning the updated existing group
-        return existing_group
+      # For each hole we create a new Hole instance
+      for new_center_coordinates in new_coordinates:
+        new_group.add_hole(job, holes_group_info, new_center_coordinates)
 
-
-    # The geometry shape doesn't exist
-    # Creating a new instance of HoleGroup
-    new_group = HoleGroup(new_coordinates, new_geom_shape, holes_group_info, part_name)
-
-    # For each hole we create a new Hole instance
-    for new_center in new_coordinates:
-      new_hole = Hole(new_center)                       # Creating a new Hole instance
-      new_job = new_hole.add_job(job, holes_group_info) # Assigning the job to the new hole
-      new_group.holes[new_center] = new_hole            # Adding the new_hole to the new_holes_group
-
-    # Adding the new job to the new group
-    new_group.jobs.append(new_job)
-    # Adding the new hole group to the Topology
-    self.holes_groups.append(new_group)
+      # Adding the new hole group to the Topology
+      self.holes_groups.append(new_group)
 
 
   def update_jobs_orders_dict(self):
@@ -103,12 +79,13 @@ class HoleGroup:
           but NOT all jobs necessarily were performed on all the holes (E.g, a hole that has a lower tolerance,
           so it has one more job performed on it).
   """
-  def __init__(self, new_coordinates, geom_shape, holes_group_info, part_name):
-    self.holes = {}                      # A dict that holds all the holes in that hole group
-    self.centers = set(new_coordinates)  # The (x,y) coordinates of holes in this hole group
-    self.jobs = []                       # All the jobs performed on this hole group
-    self.jobs_order = ''               # A string that holds the order of the jobs
-    self.geom_shape = geom_shape         # Geomertric shape of the holes in this hole group
+  def __init__(self, geom_shape, holes_group_info, part_name, parent_topology):
+    self.holes = {}                      # dict: holds all the holes in that hole group - key is hole coordinates
+    self.centers = set()                 # set:  holds the (x,y,z) coordinates of holes in this hole group
+    self.jobs = []                       # list: holds all the jobs performed on this hole group
+    self.jobs_order = ''                 # str:  holds the order of the jobs
+    self.geom_shape = geom_shape         # list: holds dicts which specifies the geometric shape of the holes in this hole group
+    self.parent_topology      = parent_topology
     self.part_name            = part_name
     self.diameter             = abs(2*min(item["p0"][0] for item in geom_shape)) # The smallest diameter of the holes
     self.hole_depth           = holes_group_info["_geom_depth"]                  # Hole's depth
@@ -117,6 +94,8 @@ class HoleGroup:
     self.thread_pitch         = holes_group_info["_geom_thread_pitch"]           # Hole's thread pitch
     self.fastener_size        = holes_group_info["_fastener_size"]
     self.standard             = holes_group_info["_standard"]
+
+    self.material = None    # str: info taken from Doron's Excel file
 
 
   # def add_job(self, job, new_coordinates, holes_group_info):
@@ -152,36 +131,46 @@ class HoleGroup:
   #   self.jobs_order += f"{new_job.job_type} - {new_job.tool_type} | "
 
 
-  def add_tolerance(self, tolerance_type, upper_tolerance, lower_tolerance):
-    """ Adding tolerances for each hole according to the EXCEL files from Doron """
+  def add_hole(self, job, holes_group_info, new_center_coordinates):
+    new_hole = Hole(new_center_coordinates, self)    # Creating a new Hole instance
+    new_hole.add_job(job, holes_group_info)    # Assigning the job to the new hole
+    self.holes[new_center_coordinates] = new_hole  # Adding the new_hole to the group
+    self.centers.add(new_center_coordinates)  # Adding the new coordinates to the group
+
+
+  def add_xls_info(self, tolerance_type, upper_tolerance, lower_tolerance, material,
+                   thread_nominal_diameter, thread_pitch, thread_tolerance_class, is_thread_thru):
+    """ Adding material and tolerances for each hole according to the EXCEL files from Doron """
+    self.material = material
     for hole in self.holes:
       hole.tolerance = tolerance_type
       hole.upper_tolerance = upper_tolerance
       hole.lower_tolerance = lower_tolerance
 
+      hole.thread_nominal_diameter = thread_nominal_diameter
+      hole.thread_pitch = thread_pitch
+      hole.thread_tolerance_class = thread_tolerance_class
+      hole.is_thread_thru = is_thread_thru
+
 
   def print(self):
     """ This method prints selected fields from that hole group """
-    print(f"Part name: {self.part_name}")
-    print(f"Number of instances : {len(self.centers)}")
+    # print(f"Part name: {self.part_name}")
+    print(f"Number of instances in Hole Group: {len(self.centers)}")
     print(f"Geometry shape: {self.geom_shape}") # Print when checking MACs
     print(f"Holes centers: {{{', '.join(f'({x}, {y}, {z})' for x, y, z in self.centers)}}}")  # For debugging
-    print(f"Diameter: {self.diameter}")
-    print(f"Depth: {round(self.hole_depth, 3)}")
+    print(f"Diameter: {self.diameter} | Depth: {round(self.hole_depth, 3)}")
+    # print(f"Depth: {round(self.hole_depth, 3)}")
 
     print(f"\nEach hole, and the jobs performed on it:")
-    for _, hole in self.holes.items():
-    # for hole in self.holes:
-      print(f"Hole position at {tuple(float(x) for x in hole.position)}")
-      print(f"Hole tolerance type: {hole.tolerance_type}, upper: {hole.upper_tolerance}, lower: {hole.lower_tolerance}")
+    for hole in self.holes.values():
+      print(f"Hole position at {tuple(float(x) for x in hole.center_coordinates)}")
+      print(f"Hole tolerance type: {hole.tolerance_type} | upper: {hole.upper_tolerance} | lower: {hole.lower_tolerance}")
       for i, job in enumerate(hole.jobs):
         print(f"{i + 1} - {job}")
-      print('')
+      print('________________________________________________')
+    print('*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-')
 
-    # print(f"{bold_s}{len(self.jobs)} jobs total{bold_e} were performed on this hole group.\nThe order they're being exectued:")
-    # for i, job in enumerate(self.jobs):
-    #   print(f"{i+1} - {job}")
-    # print('')
 
 
 
@@ -189,24 +178,26 @@ class Hole:
   """
   An object of this class holds a hole - it's position, tolerance, and jobs performed on it.
   """
-  def __init__(self, new_coordinates):
-    self.position = new_coordinates
-    self.tolerance_type = None
+  def __init__(self, new_coordinates, parent_hole_group):
+    self.parent_hole_group = parent_hole_group
+    self.center_coordinates = new_coordinates
+    self.jobs = []  # The jobs performed on this hole by the order they were performed
+    self.tolerance_type  = None
     self.upper_tolerance = None
     self.lower_tolerance = None
-    self.jobs = []                   # The jobs performed on this hole by the order they were performed
+
+    # Threading attributes from technical drawings
+    self.thread_nominal_diameter = None    #float: Nominal diameter (in mm) of the thread, e.g., 8 for an M8 thread.
+    self.thread_pitch            = None    #float: Thread pitch (in mm). E.g., 1.25 for M8x1.25
+    self.thread_tolerance_class  = None    #str:   Thread tolerance class, defining the tolerance and fit for the thread. E.g., 6H.
+    self.is_thread_thru          = None    #bool:  True if the thread goes through the entire part thickness. False if it's a blind hole.
+
 
   def add_job(self, job, holes_group_info):
     """ This method assigns a job to a hole """
-
     tool_type = process_tool_type_name(job['tool']['tool_type'])  # Cosmetics
-
-    new_job = Job(job, tool_type, holes_group_info)   # Creating a new Job instance
-    new_job.centers.add(self.position)                # Updating the set of centers
-    new_job.holes[self.position] = self               # Updating the holes dictionary
-    self.jobs.append(new_job)                         # Adding the job
-
-    return new_job
+    new_job = Job(job, tool_type, holes_group_info)               # Creating a new Job instance
+    self.jobs.append(new_job)                                     # Adding the job
 
 
 
@@ -216,8 +207,6 @@ class Job:
   Each field holds the json's field with the same name.
   """
   def __init__(self, job, tool_type, holes_group_info):
-    self.centers = set()                        # The (x,y) coordinates of holes that are being worked by this job
-    self.holes = {}
     self.job_number = job["job_number"]           # Job's index in SolidCAM
     self.job_name = job['name']                   # Job name as defined by the user
     self.job_type = job['type']                   # Technology used (e.g, 2_5D_Drilling)
@@ -226,8 +215,7 @@ class Job:
     self.job_depth = job['job_depth']             # How deep the tool goes in, NOT taking into account the tool's tip
     self.tool_depth = None                        # How deep the tool goes in, taking into account the tool's tip
     self.thread_mill_params = job["thread_mill"]  # Thread Milling parameters - not None only on this job
-    self.op_params = job["operation_parameters"]  # Profile & Chamfer parameters - not None only on this jobs
-
+    self.op_params = job["operation_parameters"] if job.get("operation_parameters") else None  # Profile & Chamfer parameters - not None only on this jobs
     self.home_number = job['home_number']
     self.parallel_home_numbers = job['home_vParallelHomeNumbers']
 
@@ -248,7 +236,7 @@ class Job:
     return 'Job type: {} | Tool type: {} | Job name and number: {} ({})'.format(self.job_type, self.tool_type, self.job_name, self.job_number)
 
 
-  # todo need to change this function so it would stop refering drilling and non-drilling separately
+  # todo need to change this function so it would stop referring drilling and non-drilling separately
   def decide_drill_params(self, job, holes_group_info):
     """
     This method decides the drill parameters for the job, depending on the job type.
