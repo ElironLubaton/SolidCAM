@@ -84,10 +84,7 @@ def process_jobs(job, part_name, topologies_dict):
 
         # If it's the first time encountering that geometry shape & holes, add it
         topologies_dict[topology_mask].add_hole_group(job, new_coordinates, holes_group_info, part_name)
-        # holes_group, new_hole = topologies_dict[topology_mask].add_hole_group(job, new_coordinates, holes_group_info, part_name)
 
-        # Adding the job to hole group
-        # holes_group.add_job(job, new_coordinates, holes_group_info)
 
 
 

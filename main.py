@@ -98,25 +98,20 @@ def processing_loop():
             data = read_json(file_path)
 
             # Going over all jobs in the part
-            print(f"part name is: {part_name}")
+            print(f"Part name is: {part_name}")
             for job in data["event_data"]["jobs"]:
                 # Processing only specific jobs
                 if job["type"] not in drilling_types and job["type"] not in non_drilling_types:
                     continue
 
-                # # Making sure all the relevant fields in the JSON exist and are correct
-                # validate_job(job, part_name)
+                # Making sure all the relevant fields in the JSON exist and are correct
+                validate_job(job, part_name)
 
                 # Checking if the job is not pre-drilling for creating pockets
                 if job["geometry"].get("recognized_holes_groups") is not None:
-                # if "recognized_holes_groups" in job['geometry']:
                     # Processing the job
                     process_jobs(job, part_name, topologies_dict)
             print(f"\n***********************\n")
-
-
-
-
 
 
 processing_loop()
@@ -183,8 +178,8 @@ depths = []
 
 
 # Printing the updated dictionary, and saving the output
-for _ , topology in topologies_dict.items():
-  print(f"{bold_s}Topology: {topology.topology}{bold_e}")
+for topology in topologies_dict.values():
+  print(f"{bold_s}Topology: {topology.topology} | Mask: {topology.topology_mask}{bold_e}")
   print(f"Total number of hole groups: {len(topology.holes_groups)}")
   total_instances = 0
   for hole_group in topology.holes_groups:
@@ -194,4 +189,7 @@ for _ , topology in topologies_dict.items():
 
   for group in topology.holes_groups:
     group.print()
+  print("\n______________________________________________________")
+  print("******************************************************")
   print("______________________________________________________\n")
+

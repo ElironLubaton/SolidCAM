@@ -173,7 +173,6 @@ class HoleGroup:
 
 
 
-
 class Hole:
   """
   An object of this class holds a hole - it's position, tolerance, and jobs performed on it.
@@ -284,8 +283,6 @@ class Job:
         # True if it's Multi-Depth Drilling job
         if self.job_type == "NC_DRILL_DEEP":
           self.deep_drill_segments = drill.get("deepDrillSegments")
-
-
 
 
   def compute_tool_depth(self):
