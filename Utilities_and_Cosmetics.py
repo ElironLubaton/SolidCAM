@@ -63,20 +63,20 @@ def topology_sort(topology_type):
         return re.sub(r'(?<!^)(?=[A-Z])', '_', topology_type)
 
 
-class Mask(Enum):
-    """
-    This class is used to deal with JSON's field '_geomShapeMask' - this field
-    holds a vector of numbers that defines the topology of a hole, but not the
-    hole's dimensions. The humber are written Right to Left (as in Hebrew).
-    Each number in the mask tells us the shape of the segments composing the hole.
-    """
-
-    PLANE = 1
-    CYLINDER = 2
-    CONIC = 3
-    CHAMFER = 4
-
-    # I can access the strings by using: "Mask(number 1-4).name"
+# class Mask(Enum):
+#     """
+#     This class is used to deal with JSON's field '_geomShapeMask' - this field
+#     holds a vector of numbers that defines the topology of a hole, but not the
+#     hole's dimensions. The humber are written Right to Left (as in Hebrew).
+#     Each number in the mask tells us the shape of the segments composing the hole.
+#     """
+#
+#     PLANE = 1
+#     CYLINDER = 2
+#     CONIC = 3
+#     CHAMFER = 4
+#
+#     # I can access the strings by using: "Mask(number 1-4).name"
 
 
 def validate_job(job, part_name):
@@ -187,3 +187,5 @@ def validate_job(job, part_name):
         for error in errors:
             print(error)
         print("\n")
+
+
