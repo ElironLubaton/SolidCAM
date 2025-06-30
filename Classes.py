@@ -1,5 +1,5 @@
 from MACs_Conversions import compare_coordinates, compare_geometries
-from Utilities_and_Cosmetics import process_job_name, process_tool_type_name
+from Utilities_and_Cosmetics import process_job_name, process_tool_type_name, remove_non_ascii
 import math
 
 # Global Variables
@@ -92,10 +92,12 @@ class HoleGroup:
     self.thread_depth         = holes_group_info["_geom_thread_depth"]           # Hole's thread depth
     self.thread_hole_diameter = holes_group_info["_geom_thread_hole_diameter"]   # Hole's thread diameter
     self.thread_pitch         = holes_group_info["_geom_thread_pitch"]           # Hole's thread pitch
-    self.fastener_size        = holes_group_info["_fastener_size"]
     self.standard             = holes_group_info["_standard"]
+    self.fastener_size        = remove_non_ascii(holes_group_info["_fastener_size"])
 
     self.material = None    # str: info taken from Doron's Excel file
+
+
 
 
   # def add_job(self, job, new_coordinates, holes_group_info):

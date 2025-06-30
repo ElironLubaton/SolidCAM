@@ -45,12 +45,18 @@ def process_tool_type_name(tool_type):
     return '_'.join(processed_words)
 
 
+def remove_non_ascii(text):
+    """ Remove non-ascii characters from a string """
+    return text.encode('ascii', 'ignore').decode()
+
+
 def topology_sort(topology_type):
+    """ A function for validation and cosmetics purposes """
     # Checking if the topology type is a valid string
     if len(topology_type) == 0:
         return False
     else:
-        # Cosmetics - using [5:] in order to remove 'HR_hw' prefix
+        # Cosmetics - removing 'HR_hw' prefix
         topology_type = topology_type[5:]
 
         # Cosmetics - adding underscores between capital letters
