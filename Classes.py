@@ -166,6 +166,8 @@ class HoleGroup:
     for hole in self.holes.values():
       print(f"Hole position at {tuple(float(x) for x in hole.center_coordinates)}")
       print(f"Hole tolerance type: {hole.tolerance_type} | upper: {hole.upper_tolerance} | lower: {hole.lower_tolerance}")
+      print(f"thread_nominal_diameter: {hole.thread_nominal_diameter} | thread_pitch: {hole.thread_pitch} "
+            f"| standard: {hole.standard} | thread_depth: {hole.thread_depth}")   # DEBUGGING PURPOSE
       for i, job in enumerate(hole.jobs):
         print(f"{i + 1} - {job}")
       print('________________________________________________')
@@ -189,10 +191,10 @@ class Hole:
     self.thread_nominal_diameter = None    # float: Nominal diameter (in mm) of the thread, e.g., 8 for an M8 thread.
     self.thread_pitch            = None    # float: Thread pitch (in mm). E.g., 1.25 for M8x1.25
     self.standard                = None    # str:   The thread's standard
-
-    # todo I don't know YET how to compute the two fields below
-    self.thread_tolerance_class  = None    # str:   Thread tolerance class, defining the tolerance and fit for the thread. E.g., 6H.
     self.thread_depth            = None    # float: The depth of the thread
+
+    # todo I don't know YET how to compute the field below - data from the techinical drawing is needed
+    self.thread_tolerance_class  = None    # str:   Thread tolerance class, defining the tolerance and fit for the thread. E.g., 6H.
 
 
   def add_job(self, job, holes_group_info):
@@ -221,30 +223,43 @@ class Hole:
 
     # Initialize
     thread_flag = False
-    diam_type = None
+    thread_or_tap = None
     unit = None
 
     # Choose which diameter parameter we're looking at - according to Thread Mill or Drill with Tap tool
     if job["type"] == "NC_THREAD":
-      diam_type = "MajorDiameter"
+      thread_or_tap = True
       thread_flag = True
     elif job["type"] == "NC_DRILL" and job["tool"]["tool_type"] == "TOOL_TAP_MILL":
-      diam_type = "D"
+      thread_or_tap = False
       thread_flag = True
 
     # If thread_flag is False, then it's not Thread Milling or Drill with Tap
     if not thread_flag:
       return
     else:
-      # Extract length parameters
-      for param in job["tool"]["lengthParameters"]:
-        if param["name"] == diam_type:
-          self.thread_nominal_diameter = param["value"]
-          unit = param["unit"]
-        elif param["name"] == "Pitch":
-          self.thread_pitch = param["value"]
+      # Finding thread's depth value
+      if job.get("job_depth") >= self.parent_hole_group.hole_depth:
+        # True if job's depth is greater (or equal) than the hole's depth
+        self.thread_depth = self.parent_hole_group.hole_depth
+      else:
+        # True if job's depth is lesser than the hole's depth
+        self.thread_depth = job["job_depth"]
 
-      # Decides thread's standard by checking if diameter and pitch matches ISO Metric table
+      # Extract length parameters
+      diam_type = "MajorDiameter" if thread_or_tap else "D"
+      for param in job["tool"]["lengthParameters"]:
+        # Tap tool's head has a chamfer, so I subtract its value from the thread's depth
+        if not thread_or_tap and param["name"] == "Ch.L":
+          # True if it's Drill with Tap
+          self.thread_depth -= param["value"]
+        if param["name"] == diam_type:
+          self.thread_nominal_diameter = param["value"]   # Finding thread's nominal diameter value
+          unit = param["unit"]                            # Finding the units - mm/inch
+        elif param["name"] == "Pitch":
+          self.thread_pitch = param["value"]              # Finding thread's pitch value
+
+      # Finding thread's standard - checking if diameter and pitch matches ISO Metric table
       if unit == "mm":
         for dia, pitches in metric_threads.items():
           if abs(self.thread_nominal_diameter - dia) < 0.2:  # Allow small tolerance
