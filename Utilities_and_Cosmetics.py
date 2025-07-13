@@ -4,7 +4,7 @@ from enum import Enum
 
 # Global Variables
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
-non_drilling_types = ["NC_PROFILE", "NC_CHAMFER"]
+non_drilling_types = ["NC_PROFILE", "NC_CHAMFER", "NC_JOB_HSS_PARALLEL_TO_CURVE"]
 
 
 # A function for reading JSON files
@@ -30,7 +30,9 @@ def process_job_name(job_type):
     elif job_type == "NC_DRILL_HR":
         return "Drill_Recognition"
     elif job_type == "NC_JOB_MW_DRILL_5X":
-        return "Multi Axis Drilling"
+        return "Multi_Axis_Drilling"
+    elif job_type == "NC_JOB_HSS_PARALLEL_TO_CURVE":
+        return "HSS_Parallel_to_Curve"
     else:
         return job_type
 
@@ -126,7 +128,7 @@ def validate_job(job, part_name):
         errors.append("geometry field is invalid")                          # Checking geometry field
     else:
         # True if it's Profile or Chamfer job - they should have a valid 'poly_arcs' field
-        if job_type in non_drilling_types:
+        if job_type in ["NC_PROFILE", "NC_CHAMFER"]:
             geometry = job["geometry"]
             if geometry.get("poly_arcs") is None or len(geometry.get("poly_arcs"))==0:   # Checking poly_arcs field
                 errors.append("geometry.poly_arcs field is invalid")
@@ -173,12 +175,12 @@ def validate_job(job, part_name):
                     if job.get("thread_mill") is None or len(job.get("thread_mill")) == 0:
                         errors.append("thread_mill field is invalid")
 
-                    # Checking again the thread fields, but also checking if their value is not zero
-                    # Note - the next 'for loop' will result in error if one of the fields are zero
-                    fields_not_none = ["_geom_thread_depth", "_geom_thread_diameter", "_geom_thread_pitch"]
-                    for field in fields_not_none:
-                        if holes_group_info.get(field) is None or holes_group_info.get(field) == 0:
-                            errors.append(f"{field} field is invalid")
+                    # # Checking again the thread fields, but also checking if their value is not zero
+                    # # Note - the next 'for loop' will result in error if one of the fields are zero
+                    # fields_not_none = ["_geom_thread_depth", "_geom_thread_diameter", "_geom_thread_pitch"]
+                    # for field in fields_not_none:
+                    #     if holes_group_info.get(field) is None or holes_group_info.get(field) == 0:
+                    #         errors.append(f"{field} field is invalid")
 
     # Printing the errors if there are any
     if errors:
