@@ -77,6 +77,7 @@ def rotation_translation(home_matrix):
     return rotation_mat, translation_vec
 
 
+
 def adjust_geometry(geometry, upper_level):
     """Return a modified geometry (geom_ShapePoly) with p0[1] and p1[1] adjusted to upper level"""
     for element in geometry:
