@@ -77,8 +77,15 @@ def rotation_translation(home_matrix):
     return rotation_mat, translation_vec
 
 
+def adjust_geometry(geometry, upper_level):
+    """Return a modified geometry (geom_ShapePoly) with p0[1] and p1[1] adjusted to upper level"""
+    for element in geometry:
+        element["p0"][1] -= upper_level
+        element["p1"][1] -= upper_level
+    return geometry
 
-def compare_geometries(new_geometry, existing_geometry):
+
+def compare_geometries(new_geometry, existing_geometry, job_number, geom_upper_level):
     """
     This function compares the shape of two geometries ("_geom_ShapePoly" field).
     We make a straight-forward comparison, and if that doesn't work we compare
@@ -103,6 +110,8 @@ def compare_geometries(new_geometry, existing_geometry):
     Args:
       new_geometry: List of dictionaries containing the hole's description of the geometry we check
       existing_geometry: List of dictionaries containing the hole's description of an existing geometry we compare to
+      geom_upper_level (int): Containing the upper level of the geometry of the hole
+      job_number(int): Containing the job's number (for Debugging purposes)
 
     Returns:
       True  if the new geomtry and existing geometry are the same
@@ -126,19 +135,33 @@ def compare_geometries(new_geometry, existing_geometry):
     for i in range(len(new_geometry)):
         # 5.1 - If the types are different, the geometries are NOT the same
         if new_geometry[i]["type"] != existing_geometry[i]["type"]:
+            # if job_number in [55, 62]:                                       # DEBUGGING PURPOSES
+            #     print(f"Job number is: {job_number} - types are different")  # DEBUGGING PURPOSES
+            #     print(f"New geometry is: {new_geometry}")                    # DEBUGGING PURPOSES
+            #     print(f"Existing geometry is: {new_geometry}")               # DEBUGGING PURPOSES
             return False
         else:
             # 5.2 - Checking if the diameters are the same. If not, then geometries are NOT the same
             if new_geometry[i]["p0"][0] != existing_geometry[i]["p1"][0]:
+                # if job_number in [55, 62]:                                          # DEBUGGING PURPOSES
+                #     print(f"Job number is: {job_number} - diameters are different") # DEBUGGING PURPOSES
+                #     print(f"New geometry is: {new_geometry}")                       # DEBUGGING PURPOSES
+                #     print(f"Existing geometry is: {new_geometry}")                  # DEBUGGING PURPOSES
                 return False
 
             # 5.3 - Checking if the depths are the same. If not, then geometries are NOT the same
             new_geom_depth = abs(new_geometry[i]["p0"][1] - new_geometry[i]["p1"][1])
             existing_geom_depth = abs(existing_geometry[i]["p0"][1] - existing_geometry[i]["p1"][1])
             if abs(new_geom_depth - existing_geom_depth) > tolerance:
+                # if job_number in [55, 62]:                                      # DEBUGGING PURPOSES
+                #     print(f"Job number is: {job_number} - depth are different") # DEBUGGING PURPOSES
+                #     print(f"New geometry is: {new_geometry}")                   # DEBUGGING PURPOSES
+                #     print(f"Existing geometry is: {new_geometry}")              # DEBUGGING PURPOSES
                 return False
     # If we got here, then geometries are the same
     return True
+
+
 
 
 # def compare_coordinates(new_center, existing_centers, hole_depth, home_number, parallel_home_numbers):
@@ -179,7 +202,7 @@ def compare_geometries(new_geometry, existing_geometry):
 #     return True, None
 
 
-def compare_coordinates(new_center, existing_group, home_number, hole_depth):
+def compare_coordinates(new_center, existing_group, home_number, hole_depth, job_number):
     """
     This function compares (x,y,z) points in order to discern if two hole centers
     refer to the SAME hole by using the following conditions:
@@ -194,6 +217,7 @@ def compare_coordinates(new_center, existing_group, home_number, hole_depth):
       existing_group: HoleGroup object containing all the Hole objects we check.
       hole_depth: Int containing the hole's depth
       home_number: Int containing the new job's home number
+      job_number(int): Int containing the job's number (for Debugging purposes)
 
     Returns:
       True if the two hole centers refer to the SAME hole, and the existing hole object.
@@ -203,6 +227,8 @@ def compare_coordinates(new_center, existing_group, home_number, hole_depth):
     # 1 - Checking if the exact same coordinates already exist
     if new_center in existing_group.centers:
         # If true, the two centers refer to the same hole, so return True
+        # if job_number in [55, 62]:                                                     # DEBUGGING PURPOSES
+        #     print(f"Job number is: {job_number} - the exact same coordinates exists")  # DEBUGGING PURPOSES
         return True, existing_group.holes[new_center]
 
     # Going over on all the Hole objects in that hole group
@@ -215,6 +241,8 @@ def compare_coordinates(new_center, existing_group, home_number, hole_depth):
                 centers_distance = np.linalg.norm(np.array(new_center) - np.array(existing_center))
                 # If true, the two centers refer to the same hole, so return True
                 if abs(centers_distance - hole_depth) <= tolerance:
+                    # if job_number in [55, 62]:                                                 # DEBUGGING PURPOSES
+                    #     print(f"Job number is: {job_number} - dist between centers == depth")  # DEBUGGING PURPOSES
                     return True, existing_group.holes[existing_center]
 
     # Return False if the two hole centers refer to DIFFERENT holes
