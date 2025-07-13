@@ -4,7 +4,7 @@ from Classes import Topology
 
 # Global Variables
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
-non_drilling_types = ["NC_PROFILE", "NC_CHAMFER"]
+non_drilling_types = ["NC_PROFILE", "NC_CHAMFER", "NC_JOB_HSS_PARALLEL_TO_CURVE"]
 
 
 def extract_coordinates(holes_group_info, rotation_mat, translation_vec):
@@ -49,12 +49,12 @@ def process_jobs(job, part_name, topologies_dict):
     This function processes jobs:
     1. It creates topologies.
     2. Assigns hole group to the relevant topologies.
-    3. Assigns jobs to the relevant hole group.
+    3. Assigns jobs to the relevant holes.
 
     Args:
       job:              The operation (job) that is done on the stock material.
       part_name:        The name of the part.
-      topologies_dict:  A dictionary that maps topology names to topology objects.
+      topologies_dict:  A dictionary that maps topology masks to topology objects.
     """
     # Calculating the Rotation Matrix and Translation Vector for each job
     rotation_mat, translation_vec = rotation_translation(job['home_matrix'])
