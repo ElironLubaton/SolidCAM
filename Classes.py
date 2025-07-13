@@ -1,10 +1,10 @@
-from MACs_Conversions import compare_coordinates, compare_geometries
+from MACs_Conversions import compare_coordinates, compare_geometries, adjust_geometry
 from Utilities_and_Cosmetics import process_job_name, process_tool_type_name, remove_non_ascii
 import math
 
 # Global Variables
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
-non_drilling_types = ["NC_PROFILE", "NC_CHAMFER"]
+non_drilling_types = ["NC_PROFILE", "NC_CHAMFER", "NC_JOB_HSS_PARALLEL_TO_CURVE"]
 
 bold_s = '\033[1m' # Start to write in bold
 bold_e = '\033[0m' # End to write in bold
@@ -28,19 +28,22 @@ class Topology:
     Returns:
       group: HoleGroup instance - existing one, or a new one
     """
-    new_geom_shape = holes_group_info["_geom_ShapePoly"]
+    geom_upper_level = holes_group_info["_geom_upper_level"]
+    new_geom_shape = adjust_geometry(holes_group_info["_geom_ShapePoly"], geom_upper_level)
+    job_number = job["job_number"]
     new_group_flag = True
 
     # Going over on all existing hole groups and check if the "new" geometry shape already exists
     for existing_group in self.holes_groups:
       # If true, then geometry shape or its reverse already exists, so just updating number of centers
-      if compare_geometries(new_geom_shape, existing_group.geom_shape):
+      if compare_geometries(new_geom_shape, existing_group.geom_shape, job_number, geom_upper_level):
         new_group_flag = False
         # Going over the centers in the new coordinates in order to update centers
         for new_center_coordinates in new_coordinates:
           # Add the new center if he is really new, or he already exists inside the hole group
           exist_flag, hole_instance = compare_coordinates(new_center_coordinates, existing_group,
-                                                          job["home_number"], existing_group.hole_depth)
+                                                          job["home_number"], existing_group.hole_depth,
+                                                          job_number)
           if exist_flag:    # If True, the hole object already exists - just add the job
             hole_instance.add_job(job,holes_group_info)
           else:             # If False, the hole object does NOT exist - creating a new Hole object, and adding the job
@@ -80,11 +83,11 @@ class HoleGroup:
           so it has one more job performed on it).
   """
   def __init__(self, geom_shape, holes_group_info, part_name, parent_topology):
-    self.holes = {}                      # dict: holds all the holes in that hole group - key is hole coordinates
-    self.centers = set()                 # set:  holds the (x,y,z) coordinates of holes in this hole group
-    self.jobs = []                       # list: holds all the jobs performed on this hole group
-    self.jobs_order = ''                 # str:  holds the order of the jobs
-    self.geom_shape = geom_shape         # list: holds dicts which specifies the geometric shape of the holes in this hole group
+    self.holes = {}                                # dict: holds all the holes in that hole group - key is hole coordinates
+    self.centers = set()                           # set:  holds the (x,y,z) coordinates of holes in this hole group
+    self.jobs = []                                 # list: holds all the jobs performed on this hole group
+    self.jobs_order = ''                           # str:  holds the order of the jobs
+    self.geom_shape = geom_shape  # list: holds dicts which specifies the geometric shape of the holes in this hole group
     self.parent_topology      = parent_topology
     self.part_name            = part_name
     self.diameter             = abs(2*min(item["p0"][0] for item in geom_shape)) # The smallest diameter of the holes
@@ -95,40 +98,8 @@ class HoleGroup:
     # self.standard             = holes_group_info["_standard"]
     self.fastener_size        = remove_non_ascii(holes_group_info["_fastener_size"])
 
+    # todo This info will be taken from Doron's Excel file
     self.material = None    # str: info taken from Doron's Excel file
-
-
-  # def add_job(self, job, new_coordinates, holes_group_info):
-  #   """
-  #   This method assigns a job to a hole group ONLY if the same exact job doesn't
-  #   already exist - we check for existence via comparison of job depth, job type,
-  #   tool type, and tool parameters.
-  #   """
-  #
-  #   tool_type = process_tool_type_name(job['tool']['tool_type']) # Cosmetics
-  #   job_depth = job['job_depth']
-  #   job_type = job['type']
-  #   tool_parameters = job['tool']
-  #   if "ver" in tool_parameters:     # Removing unnecessary field from json: "ver" under tool_parameters
-  #     tool_parameters.pop("ver")
-  #
-  #   # Note - In Multi-Axis Drilling jobs, the job depth will be defined by the tech_depth inside the hole group info
-  #   if job["type"] == "NC_JOB_MW_DRILL_5X":
-  #     job_depth = holes_group_info["_tech_depth"]
-  #
-  #   # Checking if the job already exists - Going over all the existing jobs in that hole group
-  #   for existing_job in self.jobs:
-  #     # if true, then job already exists, so existing the function
-  #     if (existing_job.job_depth       == job_depth and      # Same job depth
-  #         existing_job.job_type        == job_type  and      # Same job type
-  #         existing_job.tool_type       == tool_type and      # Same tool type
-  #         existing_job.tool_parameters == tool_parameters):  # Same tool parameters
-  #       return
-  #
-  #   # If got here, then the job is new
-  #   new_job = Job(job, tool_type, new_coordinates, holes_group_info)
-  #   self.jobs.append(new_job)
-  #   self.jobs_order += f"{new_job.job_type} - {new_job.tool_type} | "
 
 
   def add_hole(self, job, holes_group_info, new_center_coordinates):
@@ -202,7 +173,16 @@ class Hole:
     tool_type = process_tool_type_name(job['tool']['tool_type'])  # Cosmetics
     new_job = Job(job, tool_type, holes_group_info)               # Creating a new Job instance
     self.decide_thread_params(job)                                # Filling the thread parameters for relevant jobs
-    self.jobs.append(new_job)                                     # Adding the job
+
+    # Checking if this job is really new - acting as a fail-safe mechanism
+    new_job_flag = True
+    for existing_job in self.jobs:
+      if new_job == existing_job:
+        new_job_flag = False
+
+    # Adding the job only it's new
+    if new_job_flag:
+      self.jobs.append(new_job)
 
 
   def decide_thread_params(self, job):
@@ -299,9 +279,14 @@ class Job:
     self.decide_drill_params(job, holes_group_info) # Assign drill-related attributes depending on job type
     self.compute_tool_depth()  # How deep the tool goes in, taking into account the tool's tip
 
+  def __eq__(self, other):
+    """ Compare two Job objects by checking if all their attributes are identical. """
+    if not isinstance(other, Job):
+      return NotImplemented
+    return self.__dict__ == other.__dict__
 
   def __repr__(self):
-    # return 'Job type & Tool type: {}, Job name: {}'.format(f"{self.job_type} - {self.tool_type}", self.job_name)
+    """ Used for printing - Returns a string with Job type, Tool type, Job name and Job number """
     return 'Job type: {} | Tool type: {} | Job name and number: {} ({})'.format(self.job_type, self.tool_type, self.job_name, self.job_number)
 
 
@@ -368,12 +353,20 @@ class Job:
     tool depth = job depth + tip depth
     """
 
-    # Saving the tool's head angle
-    tool_angle = self.tool_parameters["parameters"][0]["value"]
+    tool_angle = 0
     tool_depth = 0
 
+    # Saving the tool's head angle
+    for param in self.tool_parameters["lengthParameters"]:
+      if param["name"] == "A":
+        tool_angle = param["value"]
+    for param in self.tool_parameters["parameters"]:
+      if param["name"] == "A":
+        tool_angle = param["value"]
+
+
     # True if the job is one of the drilling jobs
-    if self.job_type in drilling_types:
+    if self.job_type in drilling_types and tool_angle != 0:
       tip_depth = self.depth_diameter_value / math.tan(math.radians(tool_angle))
       tool_depth = self.job_depth + tip_depth
 
@@ -384,6 +377,4 @@ class Job:
       tool_depth = self.job_depth
 
     return tool_depth
-
-
 
