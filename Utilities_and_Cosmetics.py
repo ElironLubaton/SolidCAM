@@ -92,6 +92,7 @@ def validate_job(job, part_name):
 
     Args:
         job (dict): Holds all the fields of the job
+        part_name (str): The name of the part
     """
 
     errors = []           # A list that will keep all the invalid lines
