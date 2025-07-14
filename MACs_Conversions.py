@@ -78,12 +78,31 @@ def rotation_translation(home_matrix):
 
 
 
-def adjust_geometry(geometry, upper_level):
-    """Return a modified geometry (geom_ShapePoly) with p0[1] and p1[1] adjusted to upper level"""
-    for element in geometry:
-        element["p0"][1] -= upper_level
-        element["p1"][1] -= upper_level
-    return geometry
+def compare_geom_distances(new_geometry, existing_geometry):
+    """
+    Compare two _geom_ShapePoly lists to check if they are identical.
+    They are considered identical if, for each corresponding element:
+    - (p0[0] - p1[0]) is equal in both polys
+    - (p0[1] - p1[1]) is equal in both polys
+
+    Args:
+        new_geometry (list): List of dicts containing the hole's description of the geometry we check
+        existing_geometry(list): List of dicts containing the hole's description of an existing geometry we compare to
+
+    Returns:
+        True  if identical - geom_ShapePoly distances are equal
+        False otherwise
+    """
+    for elem1, elem2 in zip(new_geometry, existing_geometry):
+        delta_x1 = elem1['p0'][0] - elem1['p1'][0]
+        delta_x2 = elem2['p0'][0] - elem2['p1'][0]
+        delta_y1 = elem1['p0'][1] - elem1['p1'][1]
+        delta_y2 = elem2['p0'][1] - elem2['p1'][1]
+
+        if not (abs(delta_x1 - delta_x2) < tolerance and abs(delta_y1 - delta_y2) < tolerance):
+            return False  # Found a mismatch
+
+    return True  # All deltas matched
 
 
 def compare_geometries(new_geometry, existing_geometry, job_number, geom_upper_level):
@@ -120,7 +139,7 @@ def compare_geometries(new_geometry, existing_geometry, job_number, geom_upper_l
     """
 
     # 1,2 - Straight-forward comparison. If true, then geometry already exists.
-    if new_geometry == existing_geometry:
+    if new_geometry == existing_geometry or compare_geom_distances(new_geometry, existing_geometry):
         return True
 
     # 3 - Checking if both lists contain the same number of elements
@@ -131,6 +150,8 @@ def compare_geometries(new_geometry, existing_geometry, job_number, geom_upper_l
     # 4 - Reversing the order of the elements in the new_geometry
     # We do this in order to check if it's the same geometry represented from parallel home MACs
     new_geometry.reverse()
+    if compare_geom_distances(new_geometry, existing_geometry):
+        return True
 
     # 5 - Going over the elements "Head to Head" (from hebrew...)
     for i in range(len(new_geometry)):
