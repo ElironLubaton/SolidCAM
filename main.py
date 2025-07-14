@@ -47,7 +47,7 @@ def processing_loop():
                     continue
 
                 # Making sure all the relevant fields in the JSON exist and are correct
-                # validate_job(job, part_name)
+                validate_job(job, part_name)
 
                 # Checking if the job is not pre-drilling for creating pockets
                 if job["geometry"].get("recognized_holes_groups") is not None:
@@ -56,8 +56,6 @@ def processing_loop():
             print(f"\n***********************\n")
 
 processing_loop()
-
-
 
 
 
@@ -73,37 +71,6 @@ In order to change the stats that are being printed, head to the method 'print' 
 bold_s = '\033[1m' # Start to write in bold
 bold_e = '\033[0m' # End to write in bold
 
-# For each topology, updates the dictionary that holds all the jobs orders of all holes groups
-# It is used only for statistics purposes
-for _, topology in topologies_dict.items():
-  topology.update_jobs_orders_dict()
-
-diameters = []
-depths = []
-
-
-# # Printing the updated dictionary, and saving the output
-# with open("HoleWizard.PRT.ML.txt", "w") as file:
-#     sys.stdout = file
-#     # Print the updated holes_dict
-#     for _ , topology in topologies_dict.items():
-#       print(f"{bold_s}Topology: {topology.topology}{bold_e}")
-#       print(f"Total number of hole groups: {len(topology.holes_groups)}")
-#       total_instances = 0
-#       for hole_group in topology.holes_groups:
-#         total_instances += len(hole_group.centers)
-#       print(f"Total number of instances: {total_instances}\n")
-#
-#
-#       for group in topology.holes_groups:
-#         group.print()
-#         diameters += [group.diameter] * len(group.centers)
-#         depths += [group.hole_depth] * len(group.centers)
-#       print("______________________________________________________\n")
-#     sys.stdout = sys.__stdout__  # Reset stdout back to normal
-
-
-
 # Printing the updated dictionary, and saving the output
 for topology in topologies_dict.values():
   print(f"{bold_s}Topology: {topology.topology} | Mask: {topology.topology_mask}{bold_e}")
@@ -114,9 +81,9 @@ for topology in topologies_dict.values():
   print(f"Total number of instances: {total_instances}\n")
 
 
-  for group in topology.holes_groups:
-    group.print()
+  for group_index, group in enumerate(topology.holes_groups):
+    group.print(group_index+1)
   print("\n______________________________________________________")
-  print("******************************************************")
+  print("******************** NEW TOPOLOGY ********************")
   print("______________________________________________________\n")
 
