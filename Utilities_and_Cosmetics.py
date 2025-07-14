@@ -139,7 +139,11 @@ def validate_job(job, part_name):
                 errors.append("Unsupported type found in operation_parameters")
 
         if job["geometry"].get("recognized_holes_groups") is None:                        # Checking recognized_holes_groups field
-            errors.append("recognized_holes_groups field is invalid OR it's a pre-drilling operation")
+            if job_type in drilling_types:
+                errors.append("recognized_holes_groups field is invalid OR it's a pre-drilling operation")
+            if job_type in non_drilling_types:
+                errors.append("recognized_holes_groups field is invalid OR this operation isn't performed on holes")
+
         else: # Going over on all the holes groups in the job
             for holes_group_info in job['geometry']["recognized_holes_groups"]:
 
