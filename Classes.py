@@ -2,7 +2,7 @@ from MACs_Conversions import compare_coordinates, compare_geometries
 from Utilities_and_Cosmetics import process_job_name, process_tool_type_name, remove_non_ascii
 import math
 
-# Global Variables
+# Global variables - defines which jobs are of intrest
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
 non_drilling_types = ["NC_PROFILE", "NC_CHAMFER", "NC_JOB_HSS_PARALLEL_TO_CURVE"]
 
@@ -21,12 +21,15 @@ class Topology:
 
   def add_hole_group(self,job, new_coordinates, holes_group_info, part_name):
     """
-    This method creates a new hole group ONLY if the geometric shape of the hole group is new.
-    If the geometric shape is not new, we just update the number of the instances
-    in the hole group.
+    This method does the following:
+    1 - Creates HoleGroup instance - only in the geometric shape (geom_ShapePoly field in JSON) doesn't exist in that topology.
+    2 - Creates a Hole instance - only if the hole doesn't exist in that hole group).
 
-    Returns:
-      group: HoleGroup instance - existing one, or a new one
+    Args:
+      job (dict): Holds all information about the job.
+      new_coordinates (set): Holds a 3-tuples with the (x,y,z) coordinates of each hole
+      holes_group_info (dict): Holds all information about the hole group being processed
+      part_name (str): Holds the part name defined by the user
     """
 
     new_geom_shape = holes_group_info["_geom_ShapePoly"]
@@ -41,12 +44,14 @@ class Topology:
         # Going over the centers in the new coordinates in order to update centers
         for new_center_coordinates in new_coordinates:
           # Add the new center if he is really new, or he already exists inside the hole group
-          exist_flag, hole_instance = compare_coordinates(new_center_coordinates, existing_group,
+          hole_exist_flag, hole_instance = compare_coordinates(new_center_coordinates, existing_group,
                                                           job["home_number"], existing_group.hole_depth,
                                                           job_number)
-          if exist_flag:    # If True, the hole object already exists - just add the job
+          # If True, the Hole object already exists - just add the job to that existing Hole instance
+          if hole_exist_flag:
             hole_instance.add_job(job,holes_group_info)
-          else:             # If False, the hole object does NOT exist - creating a new Hole object, and adding the job
+          # If False, the hole object does NOT exist - creating a new Hole object, and adding the job
+          else:
             existing_group.add_hole(job, holes_group_info, new_center_coordinates)
 
     # If true, then the hole group is new (the geometry shape doesn't exist)
@@ -54,7 +59,7 @@ class Topology:
       # Creating a new instance of HoleGroup
       new_group = HoleGroup(new_geom_shape, holes_group_info, part_name, self)
 
-      # For each hole we create a new Hole instance
+      # For each hole we create a new Hole instance, and add it to the new hole group
       for new_center_coordinates in new_coordinates:
         new_group.add_hole(job, holes_group_info, new_center_coordinates)
 
@@ -62,14 +67,14 @@ class Topology:
       self.holes_groups.append(new_group)
 
 
-  def update_jobs_orders_dict(self):
-    """
-    This method updates the dictionary that holds all the jobs orders of all holes groups.
-    It is used only for statistics purposes
-    """
-    for hole_group in self.holes_groups:
-      if hole_group.jobs_order not in self.jobs_orders_dict:
-        self.jobs_orders_dict[hole_group.jobs_order] = 'Order ' + str(len(self.jobs_orders_dict)+1)
+  # def update_jobs_orders_dict(self):
+  #   """
+  #   This method updates the dictionary that holds all the jobs orders of all holes groups.
+  #   It is used only for statistics purposes
+  #   """
+  #   for hole_group in self.holes_groups:
+  #     if hole_group.jobs_order not in self.jobs_orders_dict:
+  #       self.jobs_orders_dict[hole_group.jobs_order] = 'Order ' + str(len(self.jobs_orders_dict)+1)
 
 
 
@@ -85,43 +90,57 @@ class HoleGroup:
   def __init__(self, geom_shape, holes_group_info, part_name, parent_topology):
     self.holes = {}                                # dict: holds all the holes in that hole group - key is hole coordinates
     self.centers = set()                           # set:  holds the (x,y,z) coordinates of holes in this hole group
-    self.jobs = []                                 # list: holds all the jobs performed on this hole group
-    self.jobs_order = ''                           # str:  holds the order of the jobs
+    # self.jobs = []                                 # list: holds all the jobs performed on this hole group
+    # self.jobs_order = ''                           # str:  holds the order of the jobs
     self.geom_shape = geom_shape  # list: holds dicts which specifies the geometric shape of the holes in this hole group
     self.parent_topology      = parent_topology
     self.part_name            = part_name
     self.diameter             = abs(2*min(item["p0"][0] for item in geom_shape)) # The smallest diameter of the holes
     self.hole_depth           = holes_group_info["_geom_depth"]                  # Hole's depth
-    # self.thread_depth         = holes_group_info["_geom_thread_depth"]           # Hole's thread depth
-    # self.thread_hole_diameter = holes_group_info["_geom_thread_hole_diameter"]   # Hole's thread diameter
-    # self.thread_pitch         = holes_group_info["_geom_thread_pitch"]           # Hole's thread pitch
-    # self.standard             = holes_group_info["_standard"]
+
+    # todo I think I need to move this attribute to Hole class - It can also be infered
     self.fastener_size        = remove_non_ascii(holes_group_info["_fastener_size"])
 
     # todo This info will be taken from Doron's Excel file
     self.material = None    # str: info taken from Doron's Excel file
 
 
+
   def add_hole(self, job, holes_group_info, new_center_coordinates):
-    new_hole = Hole(new_center_coordinates, job, self)    # Creating a new Hole instance
-    new_hole.add_job(job, holes_group_info)    # Assigning the job to the new hole
-    self.holes[new_center_coordinates] = new_hole  # Adding the new_hole to the group
-    self.centers.add(new_center_coordinates)  # Adding the new coordinates to the group
+    """
+    This method does the following:
+    1 - Creates a new Hole instance, and assign the job to it
+    2 - Adds the new Hole instance to the holes group.
+
+    Args:
+      job (dict): Holds all information about the job.
+      holes_group_info (dict): Holds all information about the hole group being processed
+      new_center_coordinates(3-tuple): Holds the (x,y,z) coordinates of this hole
+    """
+    # Creating a new Hole instance
+    new_hole = Hole(new_center_coordinates, job, self)
+    # Assigning the job to the new hole
+    new_hole.add_job(job, holes_group_info)
+    # Adding the new_hole to the group
+    self.holes[new_center_coordinates] = new_hole
+    # Adding the new coordinates to the group
+    self.centers.add(new_center_coordinates)
 
 
-  def add_xls_info(self, tolerance_type, upper_tolerance, lower_tolerance, material,
-                   thread_nominal_diameter, thread_pitch, thread_tolerance_class, is_thread_thru):
-    """ Adding material and tolerances for each hole according to the EXCEL files from Doron """
-    self.material = material
-    for hole in self.holes:
-      hole.tolerance = tolerance_type
-      hole.upper_tolerance = upper_tolerance
-      hole.lower_tolerance = lower_tolerance
 
-      hole.thread_nominal_diameter = thread_nominal_diameter
-      hole.thread_pitch = thread_pitch
-      hole.thread_tolerance_class = thread_tolerance_class
-      hole.is_thread_thru = is_thread_thru
+  # def add_xls_info(self, tolerance_type, upper_tolerance, lower_tolerance, material,
+  #                  thread_nominal_diameter, thread_pitch, thread_tolerance_class, is_thread_thru):
+  #   """ Adding material and tolerances for each hole according to the EXCEL files from Doron """
+  #   self.material = material
+  #   for hole in self.holes:
+  #     hole.tolerance = tolerance_type
+  #     hole.upper_tolerance = upper_tolerance
+  #     hole.lower_tolerance = lower_tolerance
+  #
+  #     hole.thread_nominal_diameter = thread_nominal_diameter
+  #     hole.thread_pitch = thread_pitch
+  #     hole.thread_tolerance_class = thread_tolerance_class
+  #     hole.is_thread_thru = is_thread_thru
 
 
   def print(self, group_index):
@@ -169,8 +188,16 @@ class Hole:
 
 
   def add_job(self, job, holes_group_info):
-    """ This method assigns a job to a hole """
+    """
+    This method assigns a job to a hole.
+
+    Args:
+      job (dict): Holds all information about the job.
+      holes_group_info (dict): Holds all information about the hole group being processed
+    """
+
     tool_type = process_tool_type_name(job['tool']['tool_type'])  # Cosmetics
+
     new_job = Job(job, tool_type, holes_group_info)               # Creating a new Job instance
     self.decide_thread_params(job)                                # Filling the thread parameters for relevant jobs
 
@@ -187,9 +214,12 @@ class Hole:
 
   def decide_thread_params(self, job):
     """
-    This function infers the thread parameters through the tool parameters
+    This function infers the thread parameters by looking at the tool parameters.
 
     *Note: for now, I'm comparing only to the ISO Metric standard.
+
+    Args:
+      job (dict): Holds all information about the job.
     """
     # Known ISO Metric thread table (coarse and fine pitches)
     metric_threads = {
@@ -294,6 +324,10 @@ class Job:
   def decide_drill_params(self, job, holes_group_info):
     """
     This method decides the drill parameters for the job, depending on the job type.
+
+    Args:
+      job (dict): Holds all information about the job.
+      holes_group_info (dict): Holds all information about the hole group being processed
     """
 
     # True if it's NOT a drilling job, so no drill parameters to save

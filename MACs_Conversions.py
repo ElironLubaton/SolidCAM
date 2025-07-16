@@ -6,39 +6,6 @@ import numpy as np
 tolerance = 0.111
 
 
-def transform_points(coordinates, rotation_mat, translation_vec):
-    """
-    This function transforms hole center (x,y,z) coordinates from any coordinate
-    system to the CAD model coordinate system:
-    1 - Translation - Subtracting the translation vector from the hole center coordinates.
-    2 - Rotation -    Dot product of the rotation matrix with the hole center coordinates.
-
-    Args:
-      coordinates:     Set with tuples of (x,y,z) centers of holes.
-      rotation_mat:    3x3 np array of the Rotation Matrix.
-      translation_vec: 3x1 np array of the Translation Vector.
-
-    Returns:
-      A set of the transformed points to the CAD model coordinate system
-    """
-    transformed_coordinates = set()
-
-    for point in coordinates:
-        # Convert the point to a numpy array (x, y, z)
-        point_array = np.array([[point[0]], [point[1]], [point[2]]]).reshape(3, 1)
-
-        # Applying translation
-        transformed_point = point_array - translation_vec
-        # Applying rotation
-        transformed_point = np.dot(rotation_mat, transformed_point)
-
-        # Convert the transformed point to a tuple, round it, and add it to the set
-        transformed_coordinates.add((round(transformed_point[0, 0], 3),
-                                     round(transformed_point[1, 0], 3),
-                                     round(transformed_point[2, 0], 3)))
-    return transformed_coordinates
-
-
 def rotation_translation(home_matrix):
     """
     This function extracts the Rotation Matrix and the Translation Vector from
@@ -77,6 +44,75 @@ def rotation_translation(home_matrix):
     return rotation_mat, translation_vec
 
 
+def extract_coordinates(holes_group_info, rotation_mat, translation_vec):
+    """
+    This function extracts holes centers (x,y,z) coordinates from a job.
+    It extracts the hole centers depending on the job's type given.
+
+    Args:
+      holes_group_info (dict):   Holes group information
+      rotation_mat (np.arr):     Rotation matrix from MAC to CAD origin
+      translation_vec (np.arr):  Translation vector from MAC to CAD origin
+
+    Returns:
+      new_coordinates (set): Coordinates extracted from the job
+    """
+
+    holes_positions = holes_group_info['_tech_positions']
+
+    # Defining a set with the holes centers - each hole center is (x,y,z) coordinates
+    # For this position format, take only the first 3 values (out of 9) of each point
+    if holes_group_info["_positions_format"] == "VFrmt_P3Str_P3End_V3Dir":
+        new_coordinates = [holes_positions[i:i + 3] for i in range(0, len(holes_positions), 9)]
+
+    # For XY position format, take (x,y) values and set 'z' to the geometry's upper level.
+    elif holes_group_info["_positions_format"] == "VFrmt_XY":
+        new_coordinates = {(round(holes_positions[i], 3),
+                            round(holes_positions[i + 1], 3),
+                            round(holes_group_info["_geom_upper_level"], 3)) for i in range(0, len(holes_positions), 2)}
+    # Debugging purposes
+    else:
+        print("Haven't encountered this format yet. Need to check it out")
+        raise ValueError("Invalid position format.")
+
+    # Transforming the points to the CAD coordinate system origin
+    new_coordinates = transform_points(new_coordinates, rotation_mat, translation_vec)
+    return new_coordinates
+
+
+def transform_points(coordinates, rotation_mat, translation_vec):
+    """
+    This function transforms hole center (x,y,z) coordinates from any coordinate
+    system to the CAD model coordinate system:
+    1 - Translation - Subtracting the translation vector from the hole center coordinates.
+    2 - Rotation -    Dot product of the rotation matrix with the hole center coordinates.
+
+    Args:
+      coordinates:     Set with tuples of (x,y,z) centers of holes.
+      rotation_mat:    3x3 np array of the Rotation Matrix.
+      translation_vec: 3x1 np array of the Translation Vector.
+
+    Returns:
+      A set of the transformed points to the CAD model coordinate system
+    """
+    transformed_coordinates = set()
+
+    for point in coordinates:
+        # Convert the point to a numpy array (x, y, z)
+        point_array = np.array([[point[0]], [point[1]], [point[2]]]).reshape(3, 1)
+
+        # Applying translation
+        transformed_point = point_array - translation_vec
+        # Applying rotation
+        transformed_point = np.dot(rotation_mat, transformed_point)
+
+        # Convert the transformed point to a tuple, round it, and add it to the set
+        transformed_coordinates.add((round(transformed_point[0, 0], 3),
+                                     round(transformed_point[1, 0], 3),
+                                     round(transformed_point[2, 0], 3)))
+    return transformed_coordinates
+
+
 
 def compare_geom_distances(new_geometry, existing_geometry):
     """
@@ -105,7 +141,7 @@ def compare_geom_distances(new_geometry, existing_geometry):
     return True  # All deltas matched
 
 
-def compare_geometries(new_geometry, existing_geometry, job_number, geom_upper_level):
+def compare_geometries(new_geometry, existing_geometry, job_number):
     """
     This function compares the shape of two geometries ("_geom_ShapePoly" field).
     We make a straight-forward comparison, and if that doesn't work we compare
@@ -246,12 +282,15 @@ def compare_coordinates(new_center, existing_group, home_number, hole_depth, job
       False if the two hole centers refer to DIFFERENT holes.
     """
 
+    hole_exist_flag = False
+
     # 1 - Checking if the exact same coordinates already exist
     if new_center in existing_group.centers:
         # If true, the two centers refer to the same hole, so return True
         # if job_number in [55, 62]:                                                     # DEBUGGING PURPOSES
         #     print(f"Job number is: {job_number} - the exact same coordinates exists")  # DEBUGGING PURPOSES
-        return True, existing_group.holes[new_center]
+        hole_exist_flag = True
+        return hole_exist_flag, existing_group.holes[new_center]
 
     # Going over on all the Hole objects in that hole group
     for existing_center in existing_group.centers:
@@ -265,10 +304,11 @@ def compare_coordinates(new_center, existing_group, home_number, hole_depth, job
                 if abs(centers_distance - hole_depth) <= tolerance:
                     # if job_number in [55, 62]:                                                 # DEBUGGING PURPOSES
                     #     print(f"Job number is: {job_number} - dist between centers == depth")  # DEBUGGING PURPOSES
-                    return True, existing_group.holes[existing_center]
+                    hole_exist_flag = True
+                    return hole_exist_flag, existing_group.holes[existing_center]
 
-    # Return False if the two hole centers refer to DIFFERENT holes
-    return False, None
+    # Return hole_exist_flag False if the two hole centers refer to DIFFERENT holes
+    return hole_exist_flag, None
 
 
 

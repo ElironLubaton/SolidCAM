@@ -16,7 +16,10 @@ def read_json(file_path):
 
 
 def process_job_name(job_type):
-    """ A function for cosmetic purposes """
+    """
+    A function for cosmetic purposes.
+    It gets the "job_type" field from the JSON file and make it more readable
+    """
     if job_type == "NC_DRILL_OLD":
         return "2_5D_Drilling"
     elif job_type == "NC_PROFILE":
@@ -87,6 +90,7 @@ def validate_job(job, part_name):
     1 - Existing
     2 - Not None
     3 - Bigger than 0
+    If any mistakes are found, it prints information about them
 
     *Note - the order of the fields on this code are similar to the order of the fields on the JSON
 

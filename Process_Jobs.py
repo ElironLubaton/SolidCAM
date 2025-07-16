@@ -1,47 +1,10 @@
-from MACs_Conversions import rotation_translation, transform_points, compare_coordinates
+from MACs_Conversions import rotation_translation,  extract_coordinates
 from Utilities_and_Cosmetics import topology_sort
 from Classes import Topology
 
 # Global Variables
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
 non_drilling_types = ["NC_PROFILE", "NC_CHAMFER", "NC_JOB_HSS_PARALLEL_TO_CURVE"]
-
-
-def extract_coordinates(holes_group_info, rotation_mat, translation_vec):
-    """
-    This function extracts holes centers (x,y,z) coordinates from a job.
-    It extracts the hole centers depending on the job's type given.
-
-    Args:
-      holes_group_info (dict):   Holes group information
-      rotation_mat (np.arr):     Rotation matrix from MAC to CAD origin
-      translation_vec (np.arr):  Translation vector from MAC to CAD origin
-
-    Returns:
-      new_coordinates (set): Coordinates extracted from the job
-    """
-
-    holes_positions = holes_group_info['_tech_positions']
-
-    # Defining a set with the holes centers - each hole center is (x,y,z) coordinates
-    # For this position format, take only the first 3 values (out of 9) of each point
-    if holes_group_info["_positions_format"] == "VFrmt_P3Str_P3End_V3Dir":
-        new_coordinates = [holes_positions[i:i + 3] for i in range(0, len(holes_positions), 9)]
-
-    # For XY position format, take (x,y) values and set 'z' to the geometry's upper level.
-    elif holes_group_info["_positions_format"] == "VFrmt_XY":
-        new_coordinates = {(round(holes_positions[i], 3),
-                            round(holes_positions[i + 1], 3),
-                            round(holes_group_info["_geom_upper_level"], 3)) for i in range(0, len(holes_positions), 2)}
-
-    # Debugging purposes
-    else:
-        print("Haven't encountered this format yet. Need to check it out")
-        raise ValueError("Invalid position format.")
-
-    # Transforming the points to the CAD coordinate system origin
-    new_coordinates = transform_points(new_coordinates, rotation_mat, translation_vec)
-    return new_coordinates
 
 
 def process_jobs(job, part_name, topologies_dict):
@@ -59,7 +22,7 @@ def process_jobs(job, part_name, topologies_dict):
     # Calculating the Rotation Matrix and Translation Vector for each job
     rotation_mat, translation_vec = rotation_translation(job['home_matrix'])
 
-    # Loops on the holes groups in each job
+    # Loops on all elements in 'recognized_holes_groups' field - each represents a hole group
     for holes_group_info in job['geometry']["recognized_holes_groups"]:
         # Extracting the coordinates based on the coordinates format
         new_coordinates = extract_coordinates(holes_group_info, rotation_mat, translation_vec)

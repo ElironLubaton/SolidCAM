@@ -5,8 +5,9 @@ from Utilities_and_Cosmetics import read_json, validate_job
 
 
 """
-This notebook's purpose is processing the JSON files of parts in order to assign jobs to their relevant recognized hole group in the relevant topology.  
-This notebook is used under the assumption that the JSON file is valid, where validation can be checked in the notebook 'JSON Validation'.
+This notebook's purpose is processing the JSON files of parts in order to assign jobs to the holes they are being
+performed on, in the relevant topology (I'm using the mask).
+
 
 The data is being processed as follows:  
 1 - Iterating on the each part's jobs.
@@ -15,19 +16,20 @@ The data is being processed as follows:
 
 3 - Assigning holes groups to their topology.  
 
-4 - Assigning jobs by the order they have been performed to their hole group.
+4 - Assigning jobs by the order they have been performed, for each hole.
 """
 
-
-topologies_dict = {} # Holds all the different topologies masks
-
+# Path to JSON's folder
 dir_path = 'C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/JSONs'
 
+# Global variables - defines which jobs are of intrest
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
 non_drilling_types = ["NC_PROFILE", "NC_CHAMFER", "NC_JOB_HSS_PARALLEL_TO_CURVE"]
 
-### Processing loop ###
 
+
+# Holds all the different topologies masks
+topologies_dict = {}
 
 def processing_loop():
     # Going over on all the parts, and process them
@@ -42,7 +44,7 @@ def processing_loop():
             # Going over all jobs in the part
             print(f"Part name is: {part_name}")
             for job in data["event_data"]["jobs"]:
-                # Processing only specific jobs
+                # Processing only specific jobs of intrest
                 if job["type"] not in drilling_types and job["type"] not in non_drilling_types:
                     continue
 
@@ -64,7 +66,7 @@ processing_loop()
 ### Printing Stats
 """
 Most of the stats that are printed here are used for DEBUGGING purposes.
-In order to change the stats that are being printed, head to the method 'print' under
+In order to change the stats that are being printed, go to the method 'print' under
 'HoleGroup' class.
 """
 
