@@ -160,8 +160,9 @@ class HoleGroup:
       #       f"| standard: {hole.standard} | thread_depth: {hole.thread_depth}")                             # DEBUGGING
       for i, job in enumerate(hole.jobs):
         print(f"{i + 1} - {job}")
-      print('________________________________________________')
-    print('*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-')
+      print("________________________________________________")
+    print("                NEW HOLE GROUP                 ")
+    print("*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-")
 
 
 
