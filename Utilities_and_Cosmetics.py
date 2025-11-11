@@ -67,6 +67,28 @@ def topology_sort(topology_type):
         # Cosmetics - adding underscores between capital letters
         return re.sub(r'(?<!^)(?=[A-Z])', '_', topology_type)
 
+# todo adda computation of segments' lengths
+def mask_segments_compute(mask_str):
+    """ A function for one-hot-encoding a topology mask """
+    # Reverse to assign seg1 = first digit, seg2 = second, etc.
+    digits = [int(d) for d in mask_str]
+
+    # Helper: convert a single digit (1–4) to 4-bit one-hot
+    def to_vec(d):
+        vec = [0, 0, 0, 0]
+        if 1 <= d <= 4:
+            vec[d - 1] = 1
+        return vec
+
+    # Initialize all segments to zeros
+    segs = [[0, 0, 0, 0] for _ in range(6)]
+
+    # Fill according to digits
+    for i, d in enumerate(digits):
+        if i < 6:
+            segs[i] = to_vec(d)
+
+    return segs
 
 # class Mask(Enum):
 #     """
