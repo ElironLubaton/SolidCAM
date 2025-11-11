@@ -1,6 +1,8 @@
 from MACs_Conversions import compare_coordinates, compare_geometries
-from Utilities_and_Cosmetics import process_job_name, process_tool_type_name, remove_non_ascii
+from Utilities_and_Cosmetics import process_job_name, process_tool_type_name, remove_non_ascii, set_mask_segments
 import math
+
+
 
 # Global variables - defines which jobs are of intrest
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
@@ -77,7 +79,6 @@ class Topology:
   #       self.jobs_orders_dict[hole_group.jobs_order] = 'Order ' + str(len(self.jobs_orders_dict)+1)
 
 
-
 class HoleGroup:
   """
   An object of this class holds all the holes in the same hole group, and the
@@ -88,22 +89,18 @@ class HoleGroup:
           so it has one more job performed on it).
   """
   def __init__(self, geom_shape, holes_group_info, part_name, parent_topology):
-    self.holes = {}                                # dict: holds all the holes in that hole group - key is hole coordinates
-    self.centers = set()                           # set:  holds the (x,y,z) coordinates of holes in this hole group
-    # self.jobs = []                                 # list: holds all the jobs performed on this hole group
-    # self.jobs_order = ''                           # str:  holds the order of the jobs
-    self.geom_shape = geom_shape  # list: holds dicts which specifies the geometric shape of the holes in this hole group
-    self.parent_topology      = parent_topology
-    self.part_name            = part_name
+    self.holes = {}                              # dict: holds all the holes in that hole group - key is hole coordinates
+    self.centers = set()                         # set:  holds the (x,y,z) coordinates of holes in this hole group
+    # self.jobs = []                             # list: holds all the jobs performed on this hole group
+    # self.jobs_order = ''                       # str:  holds the order of the jobs
+    self.geom_shape = geom_shape                 # list: holds dicts which specifies the geometric shape of the holes in this hole group
+    self.parent_topology      = parent_topology  # Topology: a pointer to the parent topology
+    self.part_name            = part_name        # str: the part's name
     self.diameter             = abs(2*min(item["p0"][0] for item in geom_shape)) # The smallest diameter of the holes
     self.hole_depth           = holes_group_info["_geom_depth"]                  # Hole's depth
 
     # todo I think I need to move this attribute to Hole class - It can also be infered
     self.fastener_size        = remove_non_ascii(holes_group_info["_fastener_size"])
-
-    # todo This info will be taken from Doron's Excel file
-    self.material = None    # str: info taken from Doron's Excel file
-
 
 
   def add_hole(self, job, holes_group_info, new_center_coordinates):
@@ -125,7 +122,6 @@ class HoleGroup:
     self.holes[new_center_coordinates] = new_hole
     # Adding the new coordinates to the group
     self.centers.add(new_center_coordinates)
-
 
 
   # def add_xls_info(self, tolerance_type, upper_tolerance, lower_tolerance, material,
@@ -171,21 +167,73 @@ class Hole:
   An object of this class holds a hole - it's position, tolerance, and jobs performed on it.
   """
   def __init__(self, new_coordinates, job, parent_hole_group):
-    self.parent_hole_group = parent_hole_group
+    # The next few blocks of parameters are for INTERNAL use
+    self.parent_hole_group = parent_hole_group  # pointer to the hole group which this hole belongs to
     self.center_coordinates = new_coordinates
     self.jobs = []  # The jobs performed on this hole by the order they were performed
-    self.tolerance_type  = None
+    self.tolerance_type = None
     self.upper_tolerance = None
     self.lower_tolerance = None
 
     # Threading attributes deducted from tool parameters
-    self.thread_nominal_diameter = None    # float: Nominal diameter (in mm) of the thread, e.g., 8 for an M8 thread.
-    self.thread_pitch            = None    # float: Thread pitch (in mm). E.g., 1.25 for M8x1.25
-    self.standard                = None    # str:   The thread's standard
-    self.thread_depth            = None    # float: The depth of the thread
+    self.thread_nominal_diameter.diameter = None   # float: Nominal diameter (in mm) of the thread, e.g., 8 for an M8 thread.
+    self.thread_pitch = None              # float: Thread pitch (in mm). E.g., 1.25 for M8x1.25
+    self.standard = None                  # str:   The thread's standard
+    self.thread_depth = None              # float: The depth of the thread
 
     # todo I don't know YET how to compute the field below - data from the techinical drawing is needed
-    self.thread_tolerance_class  = None    # str:   Thread tolerance class, defining the tolerance and fit for the thread. E.g., 6H.
+    self.thread_tolerance_class = None  # str:   Thread tolerance class, defining the tolerance and fit for the thread. E.g., 6H.
+
+    ###################################################
+    # Those parameters are for machine learning use
+    # Before doing all the fields below, I need to ask Eran (or Tatyana) for some of the fields
+    self.is_thru = None         # 0/1 - Eran/Tatyana # todo
+    self.main_diameter = None   # in mm - nominal bore before any thread - JSON
+    self.hole_depth = None      # in mm - for blind, if THRU, set to wall thickness or NaN - JSON
+    self.mask_seg1 = self.mask_seg2 = self.mask_seg3 = None # binary mask - 4 values:  0=missing/NA, 1=present - JSON
+    self.mask_seg4 = self.mask_seg5 = self.mask_seg6 = None # binary mask - 4 values:  0=missing/NA, 1=present - JSON
+    self.seg1_len = self.seg2_len = self.seg3_len = None    # in mm - length of the segment # todo
+    self.seg4_len = self.seg5_len = self.seg6_len = None    # in mm - length of the segment # todo
+    self.diam_tol_minus = None  # in mm - technical drawing # todo
+    self.diam_tol_plus = None   # in mm - technical drawing # todo
+    # GD&T related
+    self.tolerance_type = None  # binary mask - X values: 0=missing/NA, 1=present - technical drawing # todo
+    self.tolerance_value = None # in mm - tolerance value of the special tolerance - technical drawing # todo
+    # Context related
+    self.material = None                  # categorical index or learned embedding - technical drawing # todo
+    self.surface_finish_Ra = None         # in micro meters - technical drawing # todo
+    # Thread related
+    self.has_thread = None                # 0/1 - technical drawing # todo
+    self.thread_nominal_dia = None        # in mm - E.g., 2.5 for M2.5 - technical drawing # todo
+    self.thread_pitch = None              # in mm - E.g, 0.45 - technical drawing # todo
+    self.thread_depth = None              # in mm - engagement length; if THRU ALL, set to wall thickness - technical drawing # todo
+    self.thread_class_grade = None        # E.g., 6 for 6H or 6g - technical drawing # todo
+    self.thread_class_is_internal = None  # 0/1 - 1 for H/G (internal, 0 for h/g (external) - technical drawing # todo
+    # Counter Sink related
+    self.has_csk = None           # 0/1 - JSON # todo
+    self.csk_major_dia = None     # in mm - JSON # todo
+    self.csk_angle_deg = None     # in degree (not radians) - JSON # todo
+    # Counter Bore related
+    self.has_cbore = None         # in mm - JSON # todo
+    self.cbore_dia = None         # in mm - JSON # todo
+    self.cbore_depth = None       # in mm - JSON # todo
+    # Chamfer related
+    self.has_chamfer = None       # in mm - technical drawing # todo
+    self.chamfer_width = None     # in mm - technical drawing # todo
+    self.chamfer_depth = None     # in mm - technical drawing # todo
+    self.chamfer_angle_deg = None # degree - OPTIONAL - technical drawing # todo
+
+
+  def decide_params(self):
+    """ This method fills the fields for the ML model database"""
+    self.main_diameter = self.parent_hole_group.diameter
+    self.hole_depth = self.parent_hole_group.hole_depth
+
+    mask_str = str(self.parent_hole_group.parent_topology.topology_mask)  # Handling variable lengths (1-6 digits)
+    segs = set_mask_segments(mask_str)
+    (self.mask_seg1, self.mask_seg2, self.mask_seg3, self.mask_seg4, self.mask_seg5, self.mask_seg6) = segs
+
+
 
 
   def add_job(self, job, holes_group_info):
@@ -278,6 +326,120 @@ class Hole:
               if abs(self.thread_pitch - p) < 0.05:          # Allow small tolerance
                 self.standard = f"M{dia}_x_{self.thread_pitch}"
 
+
+
+# class Hole:
+#   """
+#   An object of this class holds a hole - it's position, tolerance, and jobs performed on it.
+#   """
+#   def __init__(self, new_coordinates, job, parent_hole_group):
+#     self.parent_hole_group = parent_hole_group  # pointer to the hole group which this hole belongs to
+#     self.center_coordinates = new_coordinates
+#     self.jobs = []  # The jobs performed on this hole by the order they were performed
+#     self.tolerance_type  = None
+#     self.upper_tolerance = None
+#     self.lower_tolerance = None
+#
+#     # Threading attributes deducted from tool parameters
+#     self.thread_nominal_diameter = None    # float: Nominal diameter (in mm) of the thread, e.g., 8 for an M8 thread.
+#     self.thread_pitch            = None    # float: Thread pitch (in mm). E.g., 1.25 for M8x1.25
+#     self.standard                = None    # str:   The thread's standard
+#     self.thread_depth            = None    # float: The depth of the thread
+#
+#     # todo I don't know YET how to compute the field below - data from the techinical drawing is needed
+#     self.thread_tolerance_class  = None    # str:   Thread tolerance class, defining the tolerance and fit for the thread. E.g., 6H.
+#
+#
+#   def add_job(self, job, holes_group_info):
+#     """
+#     This method assigns a job to a hole.
+#
+#     Args:
+#       job (dict): Holds all information about the job.
+#       holes_group_info (dict): Holds all information about the hole group being processed
+#     """
+#
+#     tool_type = process_tool_type_name(job['tool']['tool_type'])  # Cosmetics
+#
+#     new_job = Job(job, tool_type, holes_group_info)               # Creating a new Job instance
+#     self.decide_thread_params(job)                                # Filling the thread parameters for relevant jobs
+#
+#     # Checking if this job is really new - acting as a fail-safe mechanism
+#     new_job_flag = True
+#     for existing_job in self.jobs:
+#       if new_job == existing_job:
+#         new_job_flag = False
+#
+#     # Adding the job only it's new
+#     if new_job_flag:
+#       self.jobs.append(new_job)
+#
+#
+#   def decide_thread_params(self, job):
+#     """
+#     This function infers the thread parameters by looking at the tool parameters.
+#
+#     *Note: for now, I'm comparing only to the ISO Metric standard.
+#
+#     Args:
+#       job (dict): Holds all information about the job.
+#     """
+#     # Known ISO Metric thread table (coarse and fine pitches)
+#     metric_threads = {
+#       1.2: [0.25], 1.4: [0.3], 1.6: [0.35], 2.0: [0.4], 2.2: [0.45], 2.5: [0.45], 3.0: [0.5], 3.5: [0.6], 4.0: [0.7],
+#       5.0: [0.8], 6.0: [1.0], 7.0: [1.0], 8.0: [1.25, 1.0], 10.0: [1.5, 1.25, 1.0], 12.0: [1.75, 1.5, 1.25],
+#       14.0: [2.0, 1.5], 16.0: [2.0, 1.5], 18.0: [2.5, 2.0, 1.5], 20.0: [2.5, 2.0, 1.5], 22.0: [2.5, 2.0, 1.5],
+#       24.0: [3.0, 2.0], 27.0: [3.0, 2.0], 30.0: [3.5, 2.0], 33.0: [3.5, 2.0], 36.0: [4.0, 3.0], 39.0: [4.0, 3.0, 2.0],
+#       42.0: [4.5, 3.0], 45.0: [4.5], 48.0: [5.0], 52.0: [5.0, 3.0], 56.0: [5.5, 4.0], 60.0: [5.5, 4.0],
+#       64.0: [6.0, 4.0], 68.0: [6.0], 72.0: [6.0, 4.0], 80.0: [6.0, 4.0], 90.0: [6.0, 4.0], 100.0: [6.0, 4.0]
+#     }
+#
+#     # Initialize
+#     thread_flag = False
+#     thread_or_tap = None
+#     unit = None
+#
+#     # Choose which diameter parameter we're looking at - according to Thread Mill or Drill with Tap tool
+#     if job["type"] == "NC_THREAD":
+#       thread_or_tap = True
+#       thread_flag = True
+#     elif job["type"] == "NC_DRILL" and job["tool"]["tool_type"] == "TOOL_TAP_MILL":
+#       thread_or_tap = False
+#       thread_flag = True
+#
+#     # If thread_flag is False, then it's not Thread Milling or Drill with Tap
+#     if not thread_flag:
+#       return
+#     else:
+#       # Finding thread's depth value
+#       if job.get("job_depth") >= self.parent_hole_group.hole_depth:
+#         # True if job's depth is greater (or equal) than the hole's depth
+#         self.thread_depth = self.parent_hole_group.hole_depth
+#       else:
+#         # True if job's depth is lesser than the hole's depth
+#         self.thread_depth = job["job_depth"]
+#
+#       # Extract length parameters
+#       diam_type = "MajorDiameter" if thread_or_tap else "D"
+#       for param in job["tool"]["lengthParameters"]:
+#         # Tap tool's head has a chamfer, so I subtract its value from the thread's depth
+#         if not thread_or_tap and param["name"] == "Ch.L":
+#           # True if it's Drill with Tap
+#           self.thread_depth -= param["value"]
+#         if param["name"] == diam_type:
+#           self.thread_nominal_diameter = param["value"]   # Finding thread's nominal diameter value
+#           unit = param["unit"]                            # Finding the units - mm/inch
+#         elif param["name"] == "Pitch":
+#           self.thread_pitch = param["value"]              # Finding thread's pitch value
+#
+#       # Finding thread's standard - checking if diameter and pitch matches ISO Metric table
+#       if unit == "mm":
+#         for dia, pitches in metric_threads.items():
+#           if abs(self.thread_nominal_diameter - dia) < 0.2:  # Allow small tolerance
+#             for p in pitches:
+#               if abs(self.thread_pitch - p) < 0.05:          # Allow small tolerance
+#                 self.standard = f"M{dia}_x_{self.thread_pitch}"
+#
 
 
 class Job:
@@ -412,4 +574,7 @@ class Job:
       tool_depth = self.job_depth
 
     return tool_depth
+
+
+
 
