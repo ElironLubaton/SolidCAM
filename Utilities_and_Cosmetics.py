@@ -67,7 +67,8 @@ def topology_sort(topology_type):
         # Cosmetics - adding underscores between capital letters
         return re.sub(r'(?<!^)(?=[A-Z])', '_', topology_type)
 
-# todo adda computation of segments' lengths
+
+# todo add a computation of segments' lengths
 def mask_segments_compute(mask_str):
     """ A function for one-hot-encoding a topology mask """
     # Reverse to assign seg1 = first digit, seg2 = second, etc.
