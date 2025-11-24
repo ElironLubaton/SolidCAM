@@ -185,36 +185,36 @@ def compare_geometries(new_geometry, existing_geometry, job_number):
 
     # 4 - Reversing the order of the elements in the new_geometry
     # We do this in order to check if it's the same geometry represented from parallel home MACs
-    new_geometry.reverse()
-    if compare_geom_distances(new_geometry, existing_geometry):
+    reversed_new_geometry = new_geometry[::-1]
+    if compare_geom_distances(reversed_new_geometry, existing_geometry):
         return True
 
     # 5 - Going over the elements "Head to Head" (from hebrew...)
-    for i in range(len(new_geometry)):
+    for i in range(len(reversed_new_geometry)):
         # 5.1 - If the types are different, the geometries are NOT the same
-        if new_geometry[i]["type"] != existing_geometry[i]["type"]:
+        if reversed_new_geometry[i]["type"] != existing_geometry[i]["type"]:
             # if job_number in [55, 62]:                                       # DEBUGGING PURPOSES
             #     print(f"Job number is: {job_number} - types are different")  # DEBUGGING PURPOSES
-            #     print(f"New geometry is: {new_geometry}")                    # DEBUGGING PURPOSES
-            #     print(f"Existing geometry is: {new_geometry}")               # DEBUGGING PURPOSES
+            #     print(f"New geometry is: {reversed_new_geometry}")           # DEBUGGING PURPOSES
+            #     print(f"Existing geometry is: {reversed_new_geometry}")      # DEBUGGING PURPOSES
             return False
         else:
             # 5.2 - Checking if the diameters are the same. If not, then geometries are NOT the same
-            if new_geometry[i]["p0"][0] != existing_geometry[i]["p1"][0]:
+            if reversed_new_geometry[i]["p0"][0] != existing_geometry[i]["p1"][0]:
                 # if job_number in [55, 62]:                                          # DEBUGGING PURPOSES
                 #     print(f"Job number is: {job_number} - diameters are different") # DEBUGGING PURPOSES
-                #     print(f"New geometry is: {new_geometry}")                       # DEBUGGING PURPOSES
-                #     print(f"Existing geometry is: {new_geometry}")                  # DEBUGGING PURPOSES
+                #     print(f"New geometry is: {reversed_new_geometry}")              # DEBUGGING PURPOSES
+                #     print(f"Existing geometry is: {reversed_new_geometry}")         # DEBUGGING PURPOSES
                 return False
 
             # 5.3 - Checking if the depths are the same. If not, then geometries are NOT the same
-            new_geom_depth = abs(new_geometry[i]["p0"][1] - new_geometry[i]["p1"][1])
+            new_geom_depth = abs(reversed_new_geometry[i]["p0"][1] - reversed_new_geometry[i]["p1"][1])
             existing_geom_depth = abs(existing_geometry[i]["p0"][1] - existing_geometry[i]["p1"][1])
             if abs(new_geom_depth - existing_geom_depth) > tolerance:
                 # if job_number in [55, 62]:                                      # DEBUGGING PURPOSES
                 #     print(f"Job number is: {job_number} - depth are different") # DEBUGGING PURPOSES
-                #     print(f"New geometry is: {new_geometry}")                   # DEBUGGING PURPOSES
-                #     print(f"Existing geometry is: {new_geometry}")              # DEBUGGING PURPOSES
+                #     print(f"New geometry is: {reversed_new_geometry}")          # DEBUGGING PURPOSES
+                #     print(f"Existing geometry is: {reversed_new_geometry}")     # DEBUGGING PURPOSES
                 return False
     # If we got here, then geometries are the same
     return True
