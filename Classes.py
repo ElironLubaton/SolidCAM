@@ -93,14 +93,15 @@ class HoleGroup:
     self.centers = set()                         # set:  holds the (x,y,z) coordinates of holes in this hole group
     # self.jobs = []                             # list: holds all the jobs performed on this hole group
     # self.jobs_order = ''                       # str:  holds the order of the jobs
-    self.geom_shape = geom_shape                 # list: holds dicts which specifies the geometric shape of the holes in this hole group
+    self.geom_shape           = geom_shape       # list: holds dicts which specifies the geometric shape of the holes in this hole group
     self.parent_topology      = parent_topology  # Topology: a pointer to the parent topology
     self.part_name            = part_name        # str: the part's name
-    self.diameter             = abs(2*min(item["p0"][0] for item in geom_shape)) # The smallest diameter of the holes
-    self.hole_depth           = holes_group_info["_geom_depth"]                  # Hole's depth
+    self.diameter             = abs(2*min(item["p0"][0] for item in geom_shape))        # The smallest diameter of the hole
+    self.hole_depth           = self.decide_hole_depth(holes_group_info["_geom_depth"]) # Hole's depth
 
     # todo I think I need to move this attribute to Hole class - It can also be infered
     self.fastener_size        = remove_non_ascii(holes_group_info["_fastener_size"])
+
 
 
   def add_hole(self, job, holes_group_info, new_center_coordinates):
@@ -137,6 +138,20 @@ class HoleGroup:
   #     hole.thread_pitch = thread_pitch
   #     hole.thread_tolerance_class = thread_tolerance_class
   #     hole.is_thread_thru = is_thread_thru
+
+
+  def decide_hole_depth(self, geom_depth):
+    """ This method calculates the hole's depth """
+    mask = self.parent_topology.topology_mask
+
+    if str(mask)[0] != "3":
+      # If true, then hole does not end in a cone, so define depth by "geom_depth" field
+      return geom_depth
+    else:
+      # If true, then hole does not end in a cone, subtract cone depth from geom_depth
+      first_value = self.geom_shape[-1]["p0"][1]
+      second_value = self.geom_shape[-1]["p1"][1]
+      return geom_depth - abs(first_value - second_value)
 
 
   def print(self, group_index):
@@ -194,8 +209,10 @@ class HoleGroup:
 #     self.mask_seg4 = self.mask_seg5 = self.mask_seg6 = None # binary mask - 4 values:  0=missing/NA, 1=present - JSON
 #     self.seg1_len = self.seg2_len = self.seg3_len = None    # in mm - length of the segment # todo
 #     self.seg4_len = self.seg5_len = self.seg6_len = None    # in mm - length of the segment # todo
-#     self.diam_tol_minus = None  # in mm - technical drawing # todo
-#     self.diam_tol_plus = None   # in mm - technical drawing # todo
+#     self.diam_tol_minus = None   # in mm - technical drawing # todo
+#     self.diam_tol_plus = None    # in mm - technical drawing # todo
+#     self.depth_tol_minus = None  # in mm - technical drawing # todo
+#     self.depth_tol_plus = None   # in mm - technical drawing # todo
 #     # GD&T related
 #     self.tolerance_type = None  # binary mask - X values: 0=missing/NA, 1=present - technical drawing # todo
 #     self.tolerance_value = None # in mm - tolerance value of the special tolerance - technical drawing # todo
