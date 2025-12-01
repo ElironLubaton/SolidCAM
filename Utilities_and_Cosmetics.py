@@ -15,7 +15,7 @@ def read_json(file_path):
 
 
 
-def process_job_name(job_type):
+def process_job_name(job_type: str) -> str:
     """
     A function for cosmetic purposes.
     It gets the "job_type" field from the JSON file and make it more readable
@@ -40,7 +40,7 @@ def process_job_name(job_type):
         return job_type
 
 
-def process_tool_type_name(tool_type):
+def process_tool_type_name(tool_type: str) -> str:
     """ A function for cosmetic purposes - deletes prefix, and lowercases """
     # split the string by underscores
     words = tool_type.split('_')
@@ -50,12 +50,12 @@ def process_tool_type_name(tool_type):
     return '_'.join(processed_words)
 
 
-def remove_non_ascii(text):
+def remove_non_ascii(text: str) -> str:
     """ Remove non-ascii characters from a string """
     return text.encode('ascii', 'ignore').decode()
 
 
-def topology_sort(topology_type):
+def topology_sort(topology_type: str):
     """ A function for validation and cosmetics purposes """
     # Checking if the topology type is a valid string
     if len(topology_type) == 0:

@@ -114,7 +114,7 @@ def transform_points(coordinates, rotation_mat, translation_vec):
 
 
 
-def compare_geom_distances(new_geometry, existing_geometry):
+def compare_geom_distances(new_geometry, existing_geometry) -> bool:
     """
     Compare two _geom_ShapePoly lists to check if they are identical.
     They are considered identical if, for each corresponding element:
@@ -141,7 +141,7 @@ def compare_geom_distances(new_geometry, existing_geometry):
     return True  # All deltas matched
 
 
-def compare_geometries(new_geometry, existing_geometry, job_number):
+def compare_geometries(new_geometry, existing_geometry, job_number) -> bool:
     """
     This function compares the shape of two geometries ("_geom_ShapePoly" field).
     We make a straight-forward comparison, and if that doesn't work we compare
