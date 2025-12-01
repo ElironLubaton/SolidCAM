@@ -76,11 +76,11 @@ bold_e = '\033[0m' # End to write in bold
 # Printing the updated dictionary, and saving the output
 for topology in topologies_dict.values():
   print(f"{bold_s}Topology: {topology.topology} | Mask: {topology.topology_mask}{bold_e}")
-  print(f"Total number of hole groups: {len(topology.holes_groups)}")
+  print(f"Total number of hole groups under this topology: {len(topology.holes_groups)}")
   total_instances = 0
   for hole_group in topology.holes_groups:
     total_instances += len(hole_group.centers)
-  print(f"Total number of instances: {total_instances}\n")
+  print(f"Total number of holes in all hole groups in this topology: {total_instances}\n")
 
 
   for group_index, group in enumerate(topology.holes_groups):
