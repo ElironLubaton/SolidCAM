@@ -1,7 +1,7 @@
 import os
 
 from Process_Jobs import process_jobs
-from Utilities_and_Cosmetics import read_json, validate_job
+from Utilities_and_Cosmetics import read_json, validate_job, process_tech_drawing_json
 
 
 """
@@ -20,7 +20,10 @@ The data is being processed as follows:
 """
 
 # Path to JSON's folder
-dir_path = 'C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/JSONs'
+jsons_dir_path = "C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/JSONs"
+
+# Path to Tech_Drawing_JSONs
+tech_drawing_jsons_dir_path = "C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/Tech_Drawing_JSONs"
 
 # Global variables - defines which jobs are of intrest
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
@@ -33,10 +36,10 @@ topologies_dict = {}
 
 def processing_loop():
     # Going over on all the parts, and process them
-    for part_name in os.listdir(dir_path):
+    for part_name in os.listdir(jsons_dir_path):
         # Processing only files that ends with .json
         if part_name.endswith('.json'):
-            file_path = os.path.join(dir_path, part_name)
+            file_path = os.path.join(jsons_dir_path, part_name)
 
             # Read the JSON file
             data = read_json(file_path)
@@ -55,6 +58,9 @@ def processing_loop():
                 if job["geometry"].get("recognized_holes_groups") is not None:
                     # Processing the job
                     process_jobs(job, part_name, topologies_dict)
+
+            process_tech_drawing_json(tech_drawing_jsons_dir_path, part_name, topologies_dict)
+
             print(f"\n***********************\n")
 
 processing_loop()
