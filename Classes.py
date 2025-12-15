@@ -180,6 +180,25 @@ class HoleGroup:
       #   print(f"hole.cbore_dia is: {hole.cbore_dia}")      # DEBUGGING
       #   print(f"hole.cbore_depth is: {hole.cbore_depth}")  # DEBUGGING
 
+      print(f"diam_tol_plus is {hole.diam_tol_plus}")
+      print(f"diam_tol_minus is {hole.diam_tol_minus}")
+      print(f"depth_tol_plus is {hole.depth_tol_plus}")
+      print(f"depth_tol_minus is {hole.depth_tol_minus}")
+      # GD&T related
+      print(f"tolerance_type is {hole.tolerance_type}")
+      print(f"tolerance_value is {hole.tolerance_value}")
+      # Context related
+      print(f"material is {hole.material}")
+      print(f"surface_finish_Ra is {hole.surface_finish_Ra}")
+      # Thread related
+      print(f"has_thread is {hole.has_thread}")
+      print(f"thread_nominal_dia_drawing is {hole.thread_nominal_dia_drawing}")
+      print(f"thread_pitch_drawing is {hole.thread_pitch_drawing}")
+      print(f"thread_depth_drawing is {hole.thread_depth_drawing}")
+      # Below is 6H because it is the standard - otherwise, specified in the technical drawing
+      print(f"thread_class_grade is {hole.thread_class_grade}")
+
+
       for i, job in enumerate(hole.jobs):
         print(f"{i + 1} - {job}")
       print("________________________________________________")
@@ -216,29 +235,32 @@ class Hole:
     # Those parameters are for machine learning use
     # Before doing all the fields below, I need to ask Eran (or Tatyana) for some of the fields
     self.is_thru = None         # 0/1 - Eran/Tatyana # todo
-    self.main_diameter = None   # double: Nominal bore before any thread (in mm)
-    self.hole_depth = None      # double: Hole depth for blind. if THRU, set to wall thickness (in mm)
+    self.main_diameter = None   # float: Nominal bore before any thread (in mm)
+    self.hole_depth = None      # float: Hole depth for blind. if THRU, set to wall thickness (in mm)
     self.mask_seg1 = self.mask_seg2 = self.mask_seg3 = None # list of int: Binary mask - 4 values:  0=missing, 1=present - JSON
     self.mask_seg4 = self.mask_seg5 = self.mask_seg6 = None # list of int: Binary mask - 4 values:  0=missing, 1=present - JSON
-    self.seg1_len = self.seg2_len = self.seg3_len = None    # double: Length of the segment (in mm)
-    self.seg4_len = self.seg5_len = self.seg6_len = None    # double: Length of the segment (in mm)
-    self.diam_tol_minus = None   # in mm - technical drawing # todo
-    self.diam_tol_plus = None    # in mm - technical drawing # todo
-    self.depth_tol_minus = None  # in mm - technical drawing # todo
-    self.depth_tol_plus = None   # in mm - technical drawing # todo
+    self.seg1_len = self.seg2_len = self.seg3_len = None    # float: Length of the segment (in mm)
+    self.seg4_len = self.seg5_len = self.seg6_len = None    # float: Length of the segment (in mm)
+    self.diam_tol_plus   = None  # float: Hole diameter minus tolerance (in mm)
+    self.diam_tol_minus  = None  # float: Hole diameter plus tolerance (in mm)
+    self.depth_tol_plus  = None  # float: Hole depth plus tolerance (in mm)
+    self.depth_tol_minus = None  # float: Hole depth minus tolerance (in mm)
     # GD&T related
-    self.tolerance_type = None  # binary mask - X values: 0=missing/NA, 1=present - technical drawing # todo
-    self.tolerance_value = None # in mm - tolerance value of the special tolerance - technical drawing # todo
+    self.tolerance_type  = None  # String: The GD&T tolerance type - I should change it to binary mask # todo
+    self.tolerance_value = None  # float: Tolerance value of the GD&T (special tolerance) (in mm)
     # Context related
-    self.material = None                  # categorical index or learned embedding - technical drawing # todo
-    self.surface_finish_Ra = None         # in micro meters - technical drawing # todo
+    self.material          = None  # String: The material - should be categorical index or learned embedding # todo
+    self.surface_finish_Ra = None  # in micro meters - technical drawing
     # Thread related
-    self.has_thread = 0                   # 0/1 - technical drawing # todo
-    self.thread_nominal_dia_sk = None     # in mm - E.g., 2.5 for M2.5 - technical drawing # todo
-    self.thread_pitch_sk = None           # in mm - E.g, 0.45 - technical drawing # todo
-    self.thread_depth_sk = None           # in mm - engagement length; if THRU ALL, set to wall thickness - technical drawing # todo
-    self.thread_class_grade = None        # E.g., 6 for 6H or 6g - technical drawing # todo
-    self.thread_class_is_internal = None  # 0/1 - 1 for H/G (internal, 0 for h/g (external) - technical drawing # todo
+    self.has_thread = 0                        # Int: 0/1
+    self.thread_nominal_dia_drawing = None  # float: Thread's nominal diameter in the drawing (in mm) (E.g., 3 for M3)
+    self.thread_pitch_drawing       = None  # float: Thread's pitch diameter in the drawing (in mm) (E.g., 0.25 for M2X0.25) - perhaps deduced
+    self.thread_depth_drawing       = None  # float: Thread's depth in the drawing (in mm) - perhaps deduced
+    # self.thread_depth_drawing = None  # in mm - engagement length; if THRU ALL, set to wall thickness - technical drawing # todo
+    # Below is 6H because it is the standard - otherwise, specified in the technical drawing
+    self.thread_class_grade = None  # String: Thread's class grade (E.g., 6 for 6H or 6g)
+
+
     # Counter Sink (ALSO CHAMFER) related
     self.has_csk = 0              # int: 0/1
     self.csk_major_dia = None     # double: Countersink major diameter (in mm)
