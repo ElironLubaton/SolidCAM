@@ -15,9 +15,8 @@ def clean_json_file(file_path):
 
     # Fields to remove from each job
     fields_to_remove = [
-        "coolant", "job_feed", "job_feed_unit", "job_group_name",
-        "job_spin", "job_upper_level", "max_feed", "max_power", "max_spin", "rapid",
-        "ver", "job_spin_unit"
+        "coolant", "ver", "usage_index", "job_group_name", "job_holeWzrd_id",
+        "job_is_from_HR", "toolPath"
     ]
 
     # Go through each job and remove the specified fields
