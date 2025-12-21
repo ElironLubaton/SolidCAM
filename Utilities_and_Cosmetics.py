@@ -70,51 +70,72 @@ def topology_sort(topology_type: str):
         # Cosmetics - adding underscores between capital letters
         return re.sub(r'(?<!^)(?=[A-Z])', '_', topology_type)
 
-# def process_tech_drawing_json(tech_drawing_jsons_dir_path: str, part_name: str, topologies_dict: dict):
-#     # Going over on all tech drawing jsons
-#     for json_name in os.listdir(tech_drawing_jsons_dir_path):
-#         # Processing only files that ends with .json
-#         if part_name.endswith('.json'):
-#             file_path = os.path.join(tech_drawing_jsons_dir_path, part_name)
-#
-#             # Read the JSON file
-#             data = read_json(file_path)
-#
-#             """
-#             I need to go over EACH TOPOLOGY:
-#                 go over each HOLE GROUP:
-#
-#
-#                     first, go over all HOLES, and assign them the following:
-#                         assign for each hole the global tolerance: linear, and holes (4 attributes):
-#                             - diam_tol_minus = hole_upper_general_tolerance
-#                             - diam_tol_plus = hole_lower_general_tolerance
-#                             - depth_tol_minus = linear_upper_general_tolerance
-#                             - depth_tol_plus = linear_lower_general_tolerance
-#                         assign material = material
-#
-#                     After finish going over the holes, check:
-#                     if ALL 3 conditions are met:
-#                     - drawing diameter +- diam_tol_plus == diameter
-#                     - drawing depth +- depth_tol_plus == depth
-#                     - quantity <= number of holes
-#
-#                         go over all HOLES:
-#                             I check how many jobs there are for each hole.
-#                             if there are holes with MORE JOBS than other holes:
-#                                 assign the following to holes according to quantity (if quantity is 4, then assign to 4 holes)
-#                                     - thread attributes (4 of them) if exists:
-#                                         - has_thread = has_thread
-#                                         - thread_nominal_dia_drawing = thread_nominal_diameter
-#                                         - thread_pitch_drawing = thread_pitch
-#                                         - thread_depth_drawing = thread_depth
-#
-#                                     - GD&T attributes (2 of them) if exists:
-#                                         - tolerance_type = gdandt_type
-#                                         - tolerance_value = gdandt_value
-#
-#
-#             """
+
+
+def adding_global_info(topologies_dict: dict, tech_data):
+    """
+    This function adds the following information:
+    - Global Diameter and Depth Tolerances (if exists)
+    - Global GD&T (if exists)
+    - Material
+    Args:
+        topologies_dict (dict): Topologies dictionary that contains all hole groups and holes
+        tech_data       (dict): Holds all the hole callouts and global information about tolerancs and such
+    Returns:
+        hole_gen_tol   (float): The diameter tolerance that will be used for comparison
+        depth_gen_tol  (float): The depth tolerance that will be used for comparison
+    """
+    # Checking if there exists any information about the tolerances in the drawing
+    global_diam_flag   = int(tech_data.get("hole_general_tol_flag"))
+    global_depth_flag  = int(tech_data.get("linear_general_tol_flag"))
+    global_gdandt_flag = int(tech_data.get("gdandt_general_flag"))
+
+    # Fill global tolerance fields
+    if global_diam_flag:    # Diameter Tolerances
+        hole_up_gen_tol    = float(tech_data.get("hole_upper_general_tolerance"))
+        hole_lower_gen_tol = float(tech_data.get("hole_lower_general_tolerance"))
+    if global_depth_flag:   # Depth Tolerances
+        lin_up_gen_tol     = float(tech_data.get("linear_upper_general_tolerance"))
+        lin_lower_gen_tol  = float(tech_data.get("linear_lower_general_tolerance"))
+    if global_gdandt_flag:  # GD&T
+        glob_gdandt_type   = str(tech_data.get("global_gdandt_type"))
+        glob_gdandt_value  = float(tech_data.get("global_gdandt_value"))
+
+    ### Adding Global Attributes - Tolerances and Material ###
+    # Go over all holes, and add the global attributes - tolerances and material
+    for topology in topologies_dict.values():
+        for hole_group in topology.holes_groups:
+            for hole in hole_group.holes.values():
+                # Fill material attribute
+                hole.material = str(tech_data.get("material"))
+                hole.surface_finish = str(tech_data.get("surface_finish"))
+                # Fill global tolerances and GD&T only if exists in drawing
+                if global_diam_flag:  # Diameter Tolerances
+                    hole.diam_tol_exists = 1
+                    hole.diam_tol_plus = hole_up_gen_tol
+                    hole.diam_tol_minus = hole_lower_gen_tol
+                if global_depth_flag:  # Depth Tolerances
+                    hole.depth_tol_exists = 1
+                    hole.depth_tol_plus = lin_up_gen_tol
+                    hole.depth_tol_minus = lin_lower_gen_tol
+                if global_gdandt_flag:  # GD&T
+                    hole.gdandt_exists = 1
+                    hole.gdandt_tol_type = glob_gdandt_type
+                    hole.gdandt_tol_value = glob_gdandt_value
+
+    # Defining the general tolerances I'll be using for comparison to be the bigger of the two tolerance (+ or -)
+    if global_diam_flag:  # Diameter tolerance
+        hole_gen_tol = hole_up_gen_tol if hole_up_gen_tol > abs(hole_lower_gen_tol) else abs(hole_lower_gen_tol)
+    else:
+        hole_gen_tol = 0.15  # Defining an arbitrary diameter general tolerance
+
+    if global_depth_flag: # Depth tolerance
+        depth_gen_tol = lin_up_gen_tol if lin_up_gen_tol > abs(lin_lower_gen_tol) else abs(lin_lower_gen_tol)
+    else:
+        depth_gen_tol = 0.15 # Defining an arbitrary depth general tolerance
+
+    return hole_gen_tol, depth_gen_tol
+
 
 
 def process_tech_drawing_json(tech_drawing_jsons_dir_path: str, part_name: str, topologies_dict: dict):
@@ -125,40 +146,19 @@ def process_tech_drawing_json(tech_drawing_jsons_dir_path: str, part_name: str, 
     1. Matches a Drawing Entry to a Hole Group via Diameter and Depth.
     2. Matches specific Holes within that Group via Quantity and Job Count (descending).
     """
-
-    # 1. Construct file path and load data
+    # Construct file path
     file_path = os.path.join(tech_drawing_jsons_dir_path, part_name)
-
     # Validation: Check if file exists
     if not os.path.exists(file_path):
         print(f"Warning: Technical drawing file not found at {file_path}")
         return
-
+    # Loading the JSON file
     tech_data = read_json(file_path)
 
-    # Fill global fields
-    hole_up_gen_tol = float(tech_data.get("hole_upper_general_tolerance"))
-    hole_lower_gen_tol = float(tech_data.get("hole_lower_general_tolerance"))
-    lin_up_gen_tol = float(tech_data.get("linear_upper_general_tolerance"))
-    lin_lower_gen_tol = float(tech_data.get("linear_lower_general_tolerance"))
-    material = str(tech_data.get("material"))
+    # Adding global information to every hole
+    hole_gen_tol, depth_gen_tol = adding_global_info(topologies_dict, tech_data)
 
-    ### Adding Global Attributes - Tolerances and Material ###
-    # Go over all holes, and add the global attributes - tolerances and material
-    for topology in topologies_dict.values():
-        for hole_group in topology.holes_groups:
-            for hole in hole_group.holes.values():
-                hole.diam_tol_plus = hole_up_gen_tol
-                hole.diam_tol_minus = hole_lower_gen_tol
-                hole.depth_tol_plus = lin_up_gen_tol
-                hole.depth_tol_minus = lin_lower_gen_tol
-                hole.material = material
-
-    # Defining the general tolerance to be the bigger of the two
-    hole_gen_tol = hole_up_gen_tol if hole_up_gen_tol > abs(hole_lower_gen_tol) else abs(hole_lower_gen_tol)
-    depth_gen_tol = lin_up_gen_tol if lin_up_gen_tol > abs(lin_lower_gen_tol) else abs(lin_lower_gen_tol)
-
-    ### Adding Specific Attributes - Threads, and GD&T ###
+    ### Adding Specific Attributes Found in Technical Drawing - Threads, Tolerances, GD&T ###
     # Going over all hole callouts found in the technical drawing
     holes_callout = tech_data.get("holes_callout")
     for entry in holes_callout:
@@ -184,7 +184,7 @@ def process_tech_drawing_json(tech_drawing_jsons_dir_path: str, part_name: str, 
         Priority 4: Exact Diameter, <= Quantity (depth is ignored)
 
         """
-        # Lists to store valid candidates#
+        # Defining two lists to store valid candidates
         # We separate them to enforce the "Exact Quantity" vs "Sufficient Quantity" priority
         exact_qty_candidates = []  # Stores best match where Group Size == Drawing Qty
         sufficient_qty_candidates = []  # Stores fallback match where Group Size > Drawing Qty
@@ -229,7 +229,7 @@ def process_tech_drawing_json(tech_drawing_jsons_dir_path: str, part_name: str, 
 
         # 5. Assign Attributes to the selected target group
         if target_group:
-
+            # If quantity < size of hole group, then I first pick the holes with more jobs
             # Sort holes by job count (Heuristic: complex holes have more jobs)
             current_holes = list(target_group.holes.values())
             current_holes.sort(key=lambda h: len(h.jobs), reverse=True)
@@ -244,9 +244,9 @@ def process_tech_drawing_json(tech_drawing_jsons_dir_path: str, part_name: str, 
 
                 # --- Tolerance Attributes ---
                 # Statement is true only if a tolerance is specified in the hole callout
-                if entry.get("drawing_tol_plus")>0 or entry.get("drawing_tol_minus")>0:
-                    hole.diam_tol_plus = entry.get("drawing_tol_plus")
-                    hole.diam_tol_minus = entry.get("drawing_tol_minus")
+                if entry.get("drawing_specific_tol_plus")>0 or entry.get("drawing_specific_tol_minus")>0:
+                    hole.diam_tol_plus = entry.get("drawing_specific_tol_plus")
+                    hole.diam_tol_minus = entry.get("drawing_specific_tol_minus")
 
                 # --- Thread Attributes ---
                 if entry.get("has_thread") == 1:
@@ -259,349 +259,13 @@ def process_tech_drawing_json(tech_drawing_jsons_dir_path: str, part_name: str, 
                 # --- GD&T Attributes ---
                 # Only assign if they are not None in the JSON
                 if entry.get("gdandt_type") is not None:
-                    hole.tolerance_type = entry.get("gdandt_type")
+                    hole.gdandt_tol_type = entry.get("gdandt_type")
                     try:
-                        hole.tolerance_value = float(entry.get("gdandt_value"))
+                        hole.gdandt_tol_value = float(entry.get("gdandt_value"))
                     except (ValueError, TypeError):
-                        hole.tolerance_value = entry.get("gdandt_value")
+                        hole.gdandt_tol_value = entry.get("gdandt_value")
         else:
             print(f"Warning: No match found for Dia={drawing_diameter}, Depth={drawing_depth}, Qty={drawing_quantity}")
-
-
-        ######################
-
-
-
-
-        # # Determine if we enforce depth checking - Priorities 3 & 4 apply only when drawing_depth==0
-        # enforce_depth = drawing_depth > 0
-        #
-        # # --- Hole Groups Search Phase ---
-        # target_group = None
-        #
-        # priorities = [1, 2] if drawing_depth > 0 else [3, 4]
-        #
-        # for priority in priorities:
-        #     if target_group == None:
-        #         target_group = find_best_match(drawing_quantity, drawing_diameter, drawing_depth,
-        #                                        topologies_dict, tech_data, priority)
-        #
-        # for topology in topologies_dict.values():
-        #     for hole_group in topology.holes_groups:
-        #
-        #         # Checking if Diameter matches
-        #         delta_diameter = abs(drawing_diameter - hole_group.diameter)
-        #         if delta_diameter >= hole_gen_tol:
-        #             continue  # Diameter mismatch, skip group
-        #
-        #         # Check if Depth matches
-        #         if drawing_depth > 0:
-        #             delta_depth = abs(drawing_depth - hole_group.hole_depth)
-        #             if delta_depth >= depth_gen_tol:
-        #                 continue  # Depth mismatch, skip group
-        #
-        #         # --- Quantity Check & Sorting into the two candidates groups ---
-        #         group_size = len(hole_group.holes)
-        #         if group_size == drawing_quantity:
-        #             # Priority 1 (with depth) or 3 (without depth)
-        #             exact_matches.append(hole_group)
-        #         elif group_size > drawing_quantity:
-        #             # Priority 2 (with depth) or 4 (without depth)
-        #             subset_matches.append(hole_group)
-        #
-        # ### --- Selecting the best candidate - the best matching group as stated earlier ---
-        # target_group = None
-        #
-        # if exact_qty_matches:
-        #     # Priority 1: Found a group with EXACT quantity
-        #     target_group = exact_qty_matches[0]
-        #     # (Optional: You could add logic here to handle if multiple exact matches exist)
-        #
-        # elif sufficient_qty_matches:
-        #     # Priority 2: Fallback to a group with SUFFICIENT (more) holes
-        #     target_group = sufficient_qty_matches[0]
-        #
-        # # 5. Apply Attributes to the selected target group
-        # if target_group:
-        #
-        #     # HEURISTIC: Sort holes by number of jobs (Descending)
-        #     current_holes = list(target_group.holes.values())
-        #     current_holes.sort(key=lambda h: len(h.jobs), reverse=True)
-        #
-        #     # Select only the top N holes based on the drawing quantity
-        #     target_holes = current_holes[:drawing_quantity]
-        #
-        #     for hole in target_holes:
-        #
-        #         # Helper for mapping values
-        #         def parse_float(val):
-        #             return float(val) if val is not None else 0.0
-        #
-        #         # --- Thread Attributes ---
-        #         if entry.get("has_thread") == 1:
-        #             hole.has_thread = 1
-        #             hole.thread_nominal_dia_drawing = parse_float(entry.get("thread_nominal_diameter"))
-        #             hole.thread_pitch_drawing = parse_float(entry.get("thread_pitch"))
-        #             hole.thread_depth_drawing = parse_float(entry.get("thread_depth"))
-        #             hole.thread_class_grade = str(entry.get("thread_class_grade"))
-        #
-        #         # --- GD&T Attributes ---
-        #         if entry.get("gdandt_type") is not None:
-        #             hole.tolerance_type = entry.get("gdandt_type")
-        #             try:
-        #                 hole.tolerance_value = float(entry.get("gdandt_value"))
-        #             except (ValueError, TypeError):
-        #                 hole.tolerance_value = entry.get("gdandt_value")
-        # else:
-        #     print(
-        #         f"Warning: No matching hole group found for entry: Dia={drawing_diameter}, Depth={drawing_depth}, Qty={drawing_quantity}")
-        #
-        #     # Comparing if diameter, depth, and quantity fit
-        #     if (delta_diameter <= hole_up_gen_tol
-        #             and delta_depth <= lin_up_gen_tol
-        #             and drawing_quantity <= len(hole_group.holes)):
-        #
-        #         # HEURISTIC: Sort holes by number of jobs (Descending)
-        #         # We assume that holes with special properties (Thread, tight tolerance)
-        #         # often have MORE operations performed on them.
-        #         current_holes = list(hole_group.holes.values())
-        #         current_holes.sort(key=lambda h: len(h.jobs), reverse=True)
-        #
-        #         # Select only the top N holes based on the drawing quantity
-        #         target_holes = current_holes[:drawing_quantity]
-        #
-        #         # 4. Assign Attributes to the selected holes
-        #         for hole in target_holes:
-        #
-        #             # Mapping tolerances as requested (Strings to Floats)
-        #             # Note: Logic follows your specific mapping (Upper -> Minus, Lower -> Plus)
-        #             def parse_float(val):
-        #                 return float(val) if val is not None else 0.0
-        #
-        #             # --- Thread Attributes ---
-        #             if entry.get("has_thread") == 1:
-        #                 hole.has_thread = 1
-        #                 hole.thread_nominal_dia_drawing = parse_float(entry.get("thread_nominal_diameter"))
-        #                 hole.thread_pitch_drawing = parse_float(entry.get("thread_pitch"))
-        #                 hole.thread_depth_drawing = parse_float(entry.get("thread_depth"))
-        #                 hole.thread_class_grade = str(entry.get("thread_class_grade"))
-        #
-        #             # --- GD&T Attributes ---
-        #             # Only assign if they are not None in the JSON
-        #             if entry.get("gdandt_type") is not None:
-        #                 hole.tolerance_type = entry.get("gdandt_type")
-        #                 try:
-        #                     hole.tolerance_value = float(entry.get("gdandt_value"))
-        #                 except (ValueError, TypeError):
-        #                     hole.tolerance_value = entry.get("gdandt_value")
-
-
-
-# def process_tech_drawing_json(tech_drawing_jsons_dir_path: str, part_name: str, topologies_dict: dict):
-#     """
-#     Reads the technical drawing JSON and updates the Hole attributes in the topologies_dict.
-#
-#     Matching Logic:
-#     1. Matches a Drawing Entry to a Hole Group via Diameter and Depth.
-#     2. Matches specific Holes within that Group via Quantity and Job Count (descending).
-#     """
-#
-#     # 1. Construct file path and load data
-#     file_path = os.path.join(tech_drawing_jsons_dir_path, part_name)
-#
-#     # Validation: Check if file exists
-#     if not os.path.exists(file_path):
-#         print(f"Warning: Technical drawing file not found at {file_path}")
-#         return
-#
-#     tech_data = read_json(file_path)
-#
-#     # Fill global fields
-#     hole_up_gen_tol    = float(tech_data.get("hole_upper_general_tolerance"))
-#     hole_lower_gen_tol = float(tech_data.get("hole_lower_general_tolerance"))
-#     lin_up_gen_tol     = float(tech_data.get("linear_upper_general_tolerance"))
-#     lin_lower_gen_tol  = float(tech_data.get("linear_lower_general_tolerance"))
-#     material           = str(tech_data.get("material"))
-#
-#     ### Adding Global Attributes - Tolerances and Material ###
-#     # Go over all holes, and add the global attributes - tolerances and material
-#     for topology in topologies_dict.values():
-#         for hole_group in topology.holes_groups:
-#             for hole in hole_group.holes.values():
-#                 hole.diam_tol_plus = hole_up_gen_tol
-#                 hole.diam_tol_minus = hole_lower_gen_tol
-#                 hole.depth_tol_plus = lin_up_gen_tol
-#                 hole.depth_tol_minus = lin_lower_gen_tol
-#                 hole.material = material
-#
-#     # Defining the general tolerance to be the bigger of the two
-#     hole_gen_tol  = hole_up_gen_tol if hole_up_gen_tol>abs(hole_lower_gen_tol) else abs(hole_lower_gen_tol)
-#     depth_gen_tol = lin_up_gen_tol if lin_up_gen_tol>abs(lin_lower_gen_tol) else abs(lin_lower_gen_tol)
-#
-#     ### Adding Specific Attributes - Threads, and GD&T ###
-#     # Going over all hole callouts found in the technical drawing
-#     holes_callout = tech_data.get("holes_callout")
-#     for entry in holes_callout:
-#         try:
-#             # Parse drawing values (converting strings to appropriate types)
-#             drawing_quantity = float(entry.get("quantity"))
-#             drawing_diameter = float(entry.get("diameter"))
-#             drawing_depth    = float(entry.get("depth"))
-#         except (ValueError, TypeError):
-#             print(f"Skipping invalid entry in {part_name}: {entry}")
-#             continue
-#
-#         # Lists to store candidate groups based on priority
-#         exact_qty_matches = []  # Priority 1: Group Size == Drawing Quantity
-#         sufficient_qty_matches = []  # Priority 2: Group Size > Drawing Quantity
-#
-#         """
-#         We have two cases to deal with:
-#         1 - In "THRU" holes in the drawing, the depth is not given in the drawing, and it's set to 0 as default.
-#         2 - There are cases when part of a group has special attributes (such as GD&T) and the other part doesn't,
-#             so we look for hole groups in the CAM that has same or less than the quantity mentioned in the drawing.
-#
-#         In order to deal with those two cases we define prioritization of the groups af follows:
-#         Priority 1: Exact Diameter, Exact Quantity, Exact Depth
-#         Priority 2: Exact Diameter, <= Quantity, Exact Depth
-#         Priority 3: Exact Diameter, Exact Quantity (in cases is THRU, depth is ignored)
-#         Priority 4: Exact Diameter, <= Quantity (depth is ignored)
-#
-#         """
-#         # Initialize candidates for this specific drawing entry
-#         exact_qty_match = None       # Stores best match where Group Size == Drawing Qty
-#         sufficient_qty_match = None  # Stores fallback match where Group Size > Drawing Qty
-#
-#         # Determine if we enforce depth checking - Priorities 3 & 4 apply only when drawing_depth==0
-#         enforce_depth = drawing_depth > 0
-#
-#         # --- Hole Groups Search Phase ---
-#         target_group = None
-#
-#         priorities = [1,2] if drawing_depth>0 else [3,4]
-#
-#
-#         for priority in priorities:
-#             if target_group==None:
-#                 target_group = find_best_match(drawing_quantity, drawing_diameter, drawing_depth,
-#                                                topologies_dict, tech_data, priority)
-#
-#         for topology in topologies_dict.values():
-#             for hole_group in topology.holes_groups:
-#
-#                 # Checking if Diameter matches
-#                 delta_diameter = abs(drawing_diameter - hole_group.diameter)
-#                 if delta_diameter >= hole_gen_tol:
-#                     continue # Diameter mismatch, skip group
-#
-#                 # Check if Depth matches
-#                 if drawing_depth > 0:
-#                     delta_depth = abs(drawing_depth - hole_group.hole_depth)
-#                     if delta_depth >= depth_gen_tol:
-#                         continue  # Depth mismatch, skip group
-#
-#
-#                 # --- Quantity Check & Sorting into the two candidates groups ---
-#                 group_size = len(hole_group.holes)
-#                 if group_size == drawing_quantity:
-#                     # Priority 1 (with depth) or 3 (without depth)
-#                     exact_matches.append(hole_group)
-#                 elif group_size > drawing_quantity:
-#                     # Priority 2 (with depth) or 4 (without depth)
-#                     subset_matches.append(hole_group)
-#
-#         ### --- Selecting the best candidate - the best matching group as stated earlier ---
-#         target_group = None
-#
-#         if exact_qty_matches:
-#             # Priority 1: Found a group with EXACT quantity
-#             target_group = exact_qty_matches[0]
-#             # (Optional: You could add logic here to handle if multiple exact matches exist)
-#
-#         elif sufficient_qty_matches:
-#             # Priority 2: Fallback to a group with SUFFICIENT (more) holes
-#             target_group = sufficient_qty_matches[0]
-#
-#         # 5. Apply Attributes to the selected target group
-#         if target_group:
-#
-#             # HEURISTIC: Sort holes by number of jobs (Descending)
-#             current_holes = list(target_group.holes.values())
-#             current_holes.sort(key=lambda h: len(h.jobs), reverse=True)
-#
-#             # Select only the top N holes based on the drawing quantity
-#             target_holes = current_holes[:drawing_quantity]
-#
-#             for hole in target_holes:
-#
-#                 # Helper for mapping values
-#                 def parse_float(val):
-#                     return float(val) if val is not None else 0.0
-#
-#                 # --- Thread Attributes ---
-#                 if entry.get("has_thread") == 1:
-#                     hole.has_thread = 1
-#                     hole.thread_nominal_dia_drawing = parse_float(entry.get("thread_nominal_diameter"))
-#                     hole.thread_pitch_drawing = parse_float(entry.get("thread_pitch"))
-#                     hole.thread_depth_drawing = parse_float(entry.get("thread_depth"))
-#                     hole.thread_class_grade = str(entry.get("thread_class_grade"))
-#
-#                 # --- GD&T Attributes ---
-#                 if entry.get("gdandt_type") is not None:
-#                     hole.tolerance_type = entry.get("gdandt_type")
-#                     try:
-#                         hole.tolerance_value = float(entry.get("gdandt_value"))
-#                     except (ValueError, TypeError):
-#                         hole.tolerance_value = entry.get("gdandt_value")
-#         else:
-#             print(
-#                 f"Warning: No matching hole group found for entry: Dia={drawing_diameter}, Depth={drawing_depth}, Qty={drawing_quantity}")
-#
-#
-#
-#
-#
-#
-#
-#                 # Comparing if diameter, depth, and quantity fit
-#                 if (delta_diameter <= hole_up_gen_tol
-#                     and delta_depth <= lin_up_gen_tol
-#                     and drawing_quantity <= len(hole_group.holes)):
-#
-#                     # HEURISTIC: Sort holes by number of jobs (Descending)
-#                     # We assume that holes with special properties (Thread, tight tolerance)
-#                     # often have MORE operations performed on them.
-#                     current_holes = list(hole_group.holes.values())
-#                     current_holes.sort(key=lambda h: len(h.jobs), reverse=True)
-#
-#                     # Select only the top N holes based on the drawing quantity
-#                     target_holes = current_holes[:drawing_quantity]
-#
-#                     # 4. Assign Attributes to the selected holes
-#                     for hole in target_holes:
-#
-#                         # Mapping tolerances as requested (Strings to Floats)
-#                         # Note: Logic follows your specific mapping (Upper -> Minus, Lower -> Plus)
-#                         def parse_float(val):
-#                             return float(val) if val is not None else 0.0
-#
-#                         # --- Thread Attributes ---
-#                         if entry.get("has_thread") == 1:
-#                             hole.has_thread = 1
-#                             hole.thread_nominal_dia_drawing = parse_float(entry.get("thread_nominal_diameter"))
-#                             hole.thread_pitch_drawing       = parse_float(entry.get("thread_pitch"))
-#                             hole.thread_depth_drawing       = parse_float(entry.get("thread_depth"))
-#                             hole.thread_class_grade         = str(entry.get("thread_class_grade"))
-#
-#                         # --- GD&T Attributes ---
-#                         # Only assign if they are not None in the JSON
-#                         if entry.get("gdandt_type") is not None:
-#                             hole.tolerance_type = entry.get("gdandt_type")
-#                             try:
-#                                 hole.tolerance_value = float(entry.get("gdandt_value"))
-#                             except (ValueError, TypeError):
-#                                 hole.tolerance_value = entry.get("gdandt_value")
-
 
 
 
@@ -766,31 +430,6 @@ def validate_job(job, part_name):
 
 
 
-
-
-# def find_best_match(drawing_quantity, drawing_diameter, drawing_depth,
-#                     topologies_dict, tech_data, priority, hole_gen_tol, depth_gen_tol):
-#
-#
-#     if priority in [1,2]:   # Exact Diameter, Exact Depth, Exact Quantity
-#
-#         # going over on all hole groups
-#         for topology in topologies_dict.values():
-#             for hole_group in topology.holes_groups:
-#
-#                 # Comparing if diameter, depth, and quantity fit
-#                 if delta_diameter <= hole_gen_tol and delta_depth <= depth_gen_tol:
-#
-#                     if drawing_quantity == len(hole_group.holes)
-#
-#
-#     # elif priority == 2: # Exact Diameter, <= Quantity, Exact Depth
-#     #
-#     # elif priority == 3: # Exact Diameter, Exact Quantity (in cases of THRU holes, depth is ignored)
-#     #
-#     # elif priority == 4: # Exact Diameter, <= Quantity (in cases of THRU holes, depth is ignored)
-#
-#     return 1
 
 
 
