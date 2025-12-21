@@ -180,25 +180,33 @@ class HoleGroup:
       #   print(f"hole.cbore_dia is: {hole.cbore_dia}")      # DEBUGGING
       #   print(f"hole.cbore_depth is: {hole.cbore_depth}")  # DEBUGGING
 
-      print(f"diam_tol_plus is {hole.diam_tol_plus}")
-      print(f"diam_tol_minus is {hole.diam_tol_minus}")
-      print(f"depth_tol_plus is {hole.depth_tol_plus}")
-      print(f"depth_tol_minus is {hole.depth_tol_minus}")
+      if hole.diam_tol_exists:
+        print(f"Diameter tolerance specified is: {hole.diam_tol_plus}+ and {hole.diam_tol_minus}-")
+      else:
+        print(f"Diameter Tolerance is NOT specified")
+      if hole.depth_tol_exists:
+        print(f"Depth tolerance specified is:    {hole.depth_tol_plus}+ and {hole.depth_tol_minus}-")
+      else:
+        print(f"Depth Tolerance is NOT specified")
       # GD&T related
-      print(f"tolerance_type is {hole.tolerance_type}")
-      print(f"tolerance_value is {hole.tolerance_value}")
+      if hole.gdandt_exists:
+        print(f"GD&T tolerance type is:  {hole.gdandt_tol_type}")
+        print(f"GD&T tolerance value is: {hole.gdandt_tol_value}")
+      else:
+        print(f"GD&T is NOT specified")
       # Context related
-      print(f"material is {hole.material}")
-      print(f"surface_finish_Ra is {hole.surface_finish_Ra}")
+      print(f"material is:             {hole.material}")
+      print(f"surface_finish is:       {hole.surface_finish}")
       # Thread related
-      print(f"has_thread is {hole.has_thread}")
-      print(f"thread_nominal_dia_drawing is {hole.thread_nominal_dia_drawing}")
-      print(f"thread_pitch_drawing is {hole.thread_pitch_drawing}")
-      print(f"thread_depth_drawing is {hole.thread_depth_drawing}")
-      # Below is 6H because it is the standard - otherwise, specified in the technical drawing
-      print(f"thread_class_grade is {hole.thread_class_grade}")
+      if hole.has_thread:
+        print(f"Thread exists, so printing thread info:")
+        print(f"thread_nominal_dia_drawing is: {hole.thread_nominal_dia_drawing}")
+        print(f"thread_pitch_drawing is:       {hole.thread_pitch_drawing}")
+        print(f"thread_depth_drawing is:       {hole.thread_depth_drawing}")
+        # Below is 6H because it is the standard - otherwise, specified in the technical drawing
+        print(f"thread_class_grade is:           {hole.thread_class_grade}")
 
-
+      print(f"The jobs performed on the hole in the order they were performed:")
       for i, job in enumerate(hole.jobs):
         print(f"{i + 1} - {job}")
       print("________________________________________________")
@@ -220,7 +228,7 @@ class Hole:
     self.diameter = parent_hole_group.diameter
     self.hole_depth = parent_hole_group.hole_depth
     self.jobs = []  # The jobs performed on this hole by the order they were performed
-    self.tolerance_type = None
+    self.tolerance_type  = None
     self.upper_tolerance = None
     self.lower_tolerance = None
 
@@ -230,27 +238,32 @@ class Hole:
     self.standard = None                  # str:   The thread's standard
     self.thread_depth = None              # float: The depth of the thread
 
-
     ###################################################
-    # Those parameters are for machine learning use
+    # The parameters below are for machine learning use
     # Before doing all the fields below, I need to ask Eran (or Tatyana) for some of the fields
-    self.is_thru = None         # 0/1 - Eran/Tatyana # todo
-    self.main_diameter = None   # float: Nominal bore before any thread (in mm)
-    self.hole_depth = None      # float: Hole depth for blind. if THRU, set to wall thickness (in mm)
+    self.is_thru       = None  # 0/1 - Eran/Tatyana # todo
+    self.main_diameter = None  # float: Nominal bore before any thread (in mm)
+    self.hole_depth    = None  # float: Hole depth for blind. if THRU, set to wall thickness (in mm)
+    # Hole Segments and Segments' length
     self.mask_seg1 = self.mask_seg2 = self.mask_seg3 = None # list of int: Binary mask - 4 values:  0=missing, 1=present - JSON
     self.mask_seg4 = self.mask_seg5 = self.mask_seg6 = None # list of int: Binary mask - 4 values:  0=missing, 1=present - JSON
-    self.seg1_len = self.seg2_len = self.seg3_len = None    # float: Length of the segment (in mm)
-    self.seg4_len = self.seg5_len = self.seg6_len = None    # float: Length of the segment (in mm)
-    self.diam_tol_plus   = None  # float: Hole diameter minus tolerance (in mm)
-    self.diam_tol_minus  = None  # float: Hole diameter plus tolerance (in mm)
-    self.depth_tol_plus  = None  # float: Hole depth plus tolerance (in mm)
-    self.depth_tol_minus = None  # float: Hole depth minus tolerance (in mm)
+    self.seg1_len = self.seg2_len = self.seg3_len    = None # float: Length of the segment (in mm)
+    self.seg4_len = self.seg5_len = self.seg6_len    = None # float: Length of the segment (in mm)
+    # Diameter Tolerance Related
+    self.diam_tol_exists   = 0     # int: 1/0, indicates if there's a diameter tolerance specified in the drawing
+    self.diam_tol_plus     = None  # float: Hole DIAMETER minus tolerance (in mm)
+    self.diam_tol_minus    = None  # float: Hole DIAMETER plus tolerance (in mm)
+    # Depth Tolerance Related
+    self.depth_tol_exists  = 0     # int: 1/0, indicates if there's a depth tolerance specified in the drawing
+    self.depth_tol_plus    = None  # float: Hole DEPTH plus tolerance (in mm)
+    self.depth_tol_minus   = None  # float: Hole DEPTH minus tolerance (in mm)
     # GD&T related
-    self.tolerance_type  = None  # String: The GD&T tolerance type - I should change it to binary mask # todo
-    self.tolerance_value = None  # float: Tolerance value of the GD&T (special tolerance) (in mm)
+    self.gdandt_exists     = 0     # int: 1/0, indicates if there's a GD&T specified in the drawing
+    self.gdandt_tol_type   = None  # String: The GD&T tolerance type - I should change it to binary mask # todo
+    self.gdandt_tol_value  = None  # float: Tolerance value of the GD&T (special tolerance) (in mm)
     # Context related
     self.material          = None  # String: The material - should be categorical index or learned embedding # todo
-    self.surface_finish_Ra = None  # in micro meters - technical drawing
+    self.surface_finish = None  # in micro meters - technical drawing
     # Thread related
     self.has_thread = 0                        # Int: 0/1
     self.thread_nominal_dia_drawing = None  # float: Thread's nominal diameter in the drawing (in mm) (E.g., 3 for M3)
@@ -260,16 +273,15 @@ class Hole:
     # Below is 6H because it is the standard - otherwise, specified in the technical drawing
     self.thread_class_grade = None  # String: Thread's class grade (E.g., 6 for 6H or 6g)
 
-
     # Counter Sink (ALSO CHAMFER) related
-    self.has_csk = 0              # int: 0/1
-    self.csk_major_dia = None     # double: Countersink major diameter (in mm)
-    self.csk_minor_dia = None     # double: Countersink minor diameter (in mm)
-    self.csk_angle_deg = None     # double: Countersink angle (in degrees)
+    self.has_csk       = 0     # int: 0/1
+    self.csk_major_dia = None  # double: Countersink major diameter (in mm)
+    self.csk_minor_dia = None  # double: Countersink minor diameter (in mm)
+    self.csk_angle_deg = None  # double: Countersink angle (in degrees)
     # Counter Bore related
-    self.has_cbore = 0            # int: 0/1
-    self.cbore_dia = None         # double: Counterbore outer diameter (in mm)
-    self.cbore_depth = None       # double: Counterbore depth (in mm)
+    self.has_cbore     = 0     # int: 0/1
+    self.cbore_dia     = None  # double: Counterbore outer diameter (in mm)
+    self.cbore_depth   = None  # double: Counterbore depth (in mm)
 
     self.decide_params() # Filling all the attributes
 
