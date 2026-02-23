@@ -20,10 +20,10 @@ The data is being processed as follows:
 """
 
 # Path to JSON's folder
-jsons_dir_path = "C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/JSONs"
+jsons_dir_path = "C:/Users/eliron.lubaton/OneDrive - SolidCAM/Desktop/SolidCAM/CodePy/JSONs"
 
 # Path to Tech_Drawing_JSONs
-tech_drawing_jsons_dir_path = "C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/Tech_Drawing_JSONs"
+tech_drawing_jsons_dir_path = "C:/Users/eliron.lubaton/OneDrive - SolidCAM/Desktop/SolidCAM/CodePy/Tech_Drawing_JSONs"
 
 # Global variables - defines which jobs are of intrest
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
@@ -59,7 +59,9 @@ def processing_loop():
                     # Processing the job
                     process_jobs(job, part_name, topologies_dict)
 
-            process_tech_drawing_json(tech_drawing_jsons_dir_path, part_name, topologies_dict)
+            # Processing the tech drawing JSON we get from AI tools (Gemini), and adding its info
+            # drawing_part_name = "DRAWING_" + part_name
+            # process_tech_drawing_json(tech_drawing_jsons_dir_path, drawing_part_name, topologies_dict)
 
             print(f"\n***********************\n")
 
