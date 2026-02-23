@@ -114,227 +114,6 @@ def transform_points(coordinates, rotation_mat, translation_vec):
 
 
 
-# def compare_geom_distances(new_group, existing_group, reverse_flag) -> bool:
-#     """
-#     Compare two _geom_ShapePoly lists to check if they are identical.
-#     They are considered identical if, for each corresponding element:
-#     - (p0[0] - p1[0]) is equal in both geometric polygons
-#     - (p0[1] - p1[1]) is equal in both geometric polygons
-#     - p0[0] == p1[0] is equal
-#
-#     Args:
-#         new_group:      List of dictionaries containing the hole's description of the geometry we check
-#         existing_group: Class containing existing's hole group information
-#         reverse_flag:   Boolean that decides whether to check the reversed topology
-#
-#     Returns:
-#         True  if two groups' shapes are identical - geom_ShapePoly distances are equal
-#         False otherwise - groups are not the same
-#     """
-#
-#     # Saving the geometric shape of the existing geometry and the new geometry
-#     existing_geometry = existing_group.geom_shape
-#     new_geometry = new_group["_geom_ShapePoly"]
-#
-#     # If true, then checking the reversed topology
-#     if reverse_flag:
-#         new_geometry = new_geometry[::-1]
-#
-#     for elem1, elem2 in zip(new_geometry, existing_geometry):
-#         delta_x1 = elem1['p0'][0] - elem1['p1'][0]
-#         delta_x2 = elem2['p0'][0] - elem2['p1'][0]
-#         delta_y1 = elem1['p0'][1] - elem1['p1'][1]
-#         delta_y2 = elem2['p0'][1] - elem2['p1'][1]
-#
-#         # if ((abs(delta_x1 - delta_x2) >= tolerance or abs(delta_y1 - delta_y2) >= tolerance) and
-#         #         ((elem1['p0'][0]*2) - (elem2['p0'][0]*2)  >= tolerance)):
-#         #     return False
-#
-#         if abs(delta_x1 - delta_x2) >= tolerance or abs(delta_y1 - delta_y2) >= tolerance:
-#             print(f"Inside compare geom distances")
-#             return False
-#
-#
-#     return True  # All deltas matched
-
-# def compare_geom_distances(new_group, existing_group, reverse_flag) -> bool:
-#     """
-#     Compare two _geom_ShapePoly lists to check if they are identical.
-#     They are considered identical if, for each corresponding element:
-#     - (p0[0] - p1[0]) is equal in both geometric polygons
-#     - (p0[1] - p1[1]) is equal in both geometric polygons
-#     - p0[0] == p1[0] is equal
-#
-#     Args:
-#         new_group:      List of dictionaries containing the hole's description of the geometry we check
-#         existing_group: Class containing existing's hole group information
-#         reverse_flag:   Boolean that decides whether to check the reversed topology
-#
-#     Returns:
-#         True  if two groups' shapes are identical - geom_ShapePoly distances are equal
-#         False otherwise - groups are not the same
-#     """
-#
-#     # Saving the geometric shape of the existing geometry and the new geometry
-#     existing_geometry = existing_group.geom_shape
-#     new_geometry = new_group["_geom_ShapePoly"]
-#
-#     # If true, then checking the reversed topology
-#     if reverse_flag:
-#         new_geometry = new_geometry[::-1]
-#
-#     for elem1, elem2 in zip(new_geometry, existing_geometry):
-#         # 4.1 - return False if the types are different - the geometries are NOT the same
-#         if elem1["type"] != elem2["type"]:
-#             return False
-#
-#         # 4.2 - Checking if the depths are the same. If not, then geometries are NOT the same
-#         new_geom_depth = abs(elem1["p0"][1] - elem1["p1"][1])
-#         existing_geom_depth = abs(elem2["p0"][1] - elem2["p1"][1])
-#         if abs(new_geom_depth - existing_geom_depth) > tolerance:
-#             return False
-#
-#         # 4.3 - Checking if the diameters are the same. If not, then geometries are NOT the same
-#         if not reverse_flag:
-#             if elem1["p0"][0] - elem2["p0"][0] > tolerance:
-#                 return False
-#         # If got to else, then comparing the REVERSE
-#         else:
-#             if elem1["p0"][0] - elem2["p1"][0] > tolerance:
-#                 return False
-#
-#         # Checking the differences between Diameter size and segments' lengths
-#         delta_x1 = abs(elem1['p0'][0] - elem1['p1'][0])
-#         delta_x2 = abs(elem2['p0'][0] - elem2['p1'][0])
-#         delta_y1 = abs(elem1['p0'][1] - elem1['p1'][1])
-#         delta_y2 = abs(elem2['p0'][1] - elem2['p1'][1])
-#         if abs(delta_x1 - delta_x2) > tolerance or abs(delta_y1 - delta_y2) > tolerance:
-#             return False
-#
-#     return True  # All deltas matched
-
-
-# def compare_geometries(new_group, existing_group, job_number) -> bool:
-#     """
-#     This function compares the shape of two geometries ("_geom_ShapePoly" field).
-#     We make a straight-forward comparison, and if that doesn't work we compare
-#     the REVERSE of the geometry.
-#
-#     *Note - This function is used in order to deal with cases where a hole
-#     is being worked from different MACs (which are parallel).
-#
-#     The Algorithm:
-#     1 - Check if both geometries contain the same number of elements (Trivial) - return False if not same
-#     2 - Straight-forward comparison (Trivial) - return True if same
-#     3 - REVERSE the order of the elements in the geometry list we're checking
-#     4 - Check both lists with elements "head to head":
-#       4.1 - Compare the types of the elements
-#       4.2 - Compare the diameter of the elements
-#       4.3 - Compare the depth of the elements
-#     5 - If we passed 4, then geometry already exists
-#
-#     Args:
-#       new_group: List of dictionaries containing the hole's description of the geometry we check
-#       existing_group: Class containing existing's hole group information
-#       job_number(int): Containing the job's number (for Debugging purposes)
-#
-#     Returns:
-#       True  if the new geomtry and existing geometry are the same
-#       False if the new geomtry and existing geometry are NOT the same
-#     """
-#
-#     # Saving the geometric shape of the existing geometry and the new geometry
-#     existing_geometry = existing_group.geom_shape
-#     new_geometry = new_group["_geom_ShapePoly"]
-#
-#     # 1 - Checking if both lists contain the same number of elements
-#     # If true, proceed to check if they are the same, else, the geometries are NOT the same, so return False
-#     if len(new_geometry) != len(existing_geometry):
-#         return False
-#
-#     # 2 - Straight-forward comparison. If true, then geometry already exists.
-#     if new_geometry == existing_geometry or compare_geom_distances(new_group, existing_group, False):
-#         return True
-#
-#     # 3 - Reversing the order of the elements in the new_geometry
-#     # We do this in order to check if it's the same geometry represented from parallel home MACs
-#     reversed_new_geometry = new_geometry[::-1]
-#     if compare_geom_distances(new_group, existing_group, True):
-#         print(f"HERE???")
-#         return True
-#
-#     # 4 - Going over the elements "Head to Head" (from hebrew...)
-#     for i in range(len(reversed_new_geometry)):
-#         # 4.1 - If the types are different, the geometries are NOT the same
-#         if reversed_new_geometry[i]["type"] != existing_geometry[i]["type"]:
-#             return False
-#         else:
-#             # 4.2 - Checking if the diameters are the same. If not, then geometries are NOT the same
-#             if reversed_new_geometry[i]["p0"][0] - existing_geometry[i]["p1"][0] >= tolerance:
-#                 return False
-#
-#             # 4.3 - Checking if the depths are the same. If not, then geometries are NOT the same
-#             new_geom_depth = abs(reversed_new_geometry[i]["p0"][1] - reversed_new_geometry[i]["p1"][1])
-#             existing_geom_depth = abs(existing_geometry[i]["p0"][1] - existing_geometry[i]["p1"][1])
-#             if abs(new_geom_depth - existing_geom_depth) > tolerance:
-#                 return False
-#     # 5 - If we got here, then geometries are the same
-#     return True
-
-# def compare_geometries(new_group, existing_group) -> bool:
-#     """
-#     This function compares the shape of two geometries ("_geom_ShapePoly" field).
-#     We make a straight-forward comparison, and if that doesn't work we compare
-#     the REVERSE of the geometry.
-#
-#     *Note - This function is used in order to deal with cases where a hole
-#     is being worked from different MACs (which are parallel).
-#
-#     The Algorithm:
-#     1 - Check if both geometries contain the same number of elements (Trivial) - return False if not same
-#     2 - Straight-forward comparison (Trivial) - return True if same
-#     3 - REVERSE the order of the elements in the geometry list we're checking
-#     4 - Check both lists with elements "head to head":
-#       4.1 - Compare the types of the elements
-#       4.2 - Compare the diameter of the elements
-#       4.3 - Compare the depth of the elements
-#     5 - If we passed 4, then geometry already exists
-#
-#     Args:
-#       new_group: List of dictionaries containing the hole's description of the geometry we check
-#       existing_group: Class containing existing's hole group information
-#       job_number(int): Containing the job's number (for Debugging purposes)
-#
-#     Returns:
-#       True  if the new geomtry and existing geometry are the same
-#       False if the new geomtry and existing geometry are NOT the same
-#     """
-#
-#     # Saving the geometric shape of the existing geometry and the new geometry
-#     existing_geometry = existing_group.geom_shape
-#     new_geometry = new_group["_geom_ShapePoly"]
-#
-#
-#     # 1 - Checking if both lists contain the same number of elements
-#     # If true, proceed to check if they are the same, else, the geometries are NOT the same, so return False
-#     if len(new_geometry) != len(existing_geometry):
-#         return False
-#
-#     # 2 - Straight-forward comparison. If true, then geometry already exists.
-#     if new_geometry == existing_geometry or compare_geom_distances(new_group, existing_group, False):
-#         # print(f"The same geometry! In straight-forward comparison")   # DEBUGGING
-#         return True
-#
-#     # 3 - Reversing the order of the elements in the new_geometry
-#     # We do this in order to check if it's the same geometry represented from parallel home MACs
-#     if compare_geom_distances(new_group, existing_group, True):
-#         # print(f"The same geometry! In Reverse")                       # DEBUGGING
-#         return True
-#
-#     # print(f"Different! Reached the end")                              # DEBUGGING
-#     return False
-
-
 def compare_geometries(new_group, existing_group, reverse_flag) -> bool:
     """
     This function compares the shape of two geometries ("_geom_ShapePoly" field).
@@ -342,38 +121,22 @@ def compare_geometries(new_group, existing_group, reverse_flag) -> bool:
     the REVERSE of the geometry.
 
     *Note - This function is used in order to deal with two cases:
-    - Holes with relative similar dimensions ( < tolerance)
+    - Holes with relative similar dimensions ( < tolerance). I've decided that similar holes up to tolerance
+      will count as the same hole - I don't think it really matters.
     - Holes are that are being worked from different MACs (which are parallel).
 
     The Algorithm:
     1 - Check if both geometries contain the same number of elements (Trivial) - return False if not same
-    2 - Iterating on both geometries at the same time, and comparing their elements:
+    2 - Iterating on both geometries at the same time, and comparing their elements (original or reverse):
       2.1 - Compare the types of the elements (e.g., "line")
-      2.2 - Compare the diameter of the elements
-      2.3 - Compare the depth of the elements
-
-    3 - REVERSE the order of the elements in the geometry list we're checking
-    4 - Check both lists with elements "head to head":
-      4.1 - Compare the types of the elements
-      4.2 - Compare the diameter of the elements
-      4.3 - Compare the depth of the elements
-    5 - If we passed 4, then geometry already exists
-
-
-    The Algorithm:
-    1 - Check if both geometries contain the same number of elements (Trivial) - return False if not same
-    2 - Straight-forward comparison (Trivial) - return True if same
-    3 - REVERSE the order of the elements in the geometry list we're checking
-    4 - Check both lists with elements "head to head":
-      4.1 - Compare the types of the elements
-      4.2 - Compare the diameter of the elements
-      4.3 - Compare the depth of the elements
-    5 - If we passed 4, then geometry already exists
+      2.2 - Compare the depth of the elements
+      2.3 - Compare the diameter of the elements
+    3 - If we passed 2, then geometries are the same
 
     Args:
       new_group:      List of dictionaries containing the hole's description of the geometry we check
       existing_group: Class containing existing's hole group information
-      reverse_flag:   Boolean that decides whether to check the reversed topology
+      reverse_flag:   Boolean that decides whether to check the reversed geometry
 
     Returns:
       True  if the new geometry and existing geometry are the SAME
@@ -393,27 +156,26 @@ def compare_geometries(new_group, existing_group, reverse_flag) -> bool:
     if reverse_flag:
         new_geometry = new_geometry[::-1]
 
-    # Comparing elements of both geometries
+    # 2 - Iterating on both geometries at the same time, and comparing their elements
     for elem1, elem2 in zip(new_geometry, existing_geometry):
-        # 4.1 - return False if the types are different - the geometries are NOT the same
+        # 2.1 - Comparing the types of the elements - return False if different
         if elem1["type"] != elem2["type"]:
             return False
 
-        # 4.2 - Checking if the depths are the same. If not, then geometries are NOT the same
+        # 2.2 - Checking if the depths are the same. If not, then geometries are NOT the same
         new_geom_depth =      abs(abs(elem1["p0"][1]) - abs(elem1["p1"][1]))
         existing_geom_depth = abs(abs(elem2["p0"][1]) - abs(elem2["p1"][1]))
         if abs(new_geom_depth - existing_geom_depth) > tolerance:
             return False
 
-        # 4.3 - Checking if the diameters are the same. If not, then geometries are NOT the same
-        # If reverse_flag is true, then checking the reverse
-        if reverse_flag:
+        # 2.3 - Checking if the diameters are the same. If not, then geometries are NOT the same
+        if reverse_flag:   # If reverse_flag is true, then checking the reverse
             if abs((elem1["p0"][0]*2) - (elem2["p1"][0]*2)) > tolerance:
                 return False
         elif abs((elem1["p0"][0] * 2) - (elem2["p0"][0] * 2)) > tolerance:
             return False
 
-        # Checking the differences between Diameter size and segments' lengths
+        # Checking the DIFFERENCES between Diameter size and segments' lengths
         delta_x1 = abs(abs(elem1['p0'][0]) - abs(elem1['p1'][0]))
         delta_x2 = abs(abs(elem2['p0'][0]) - abs(elem2['p1'][0]))
         delta_y1 = abs(abs(elem1['p0'][1]) - abs(elem1['p1'][1]))
@@ -424,60 +186,6 @@ def compare_geometries(new_group, existing_group, reverse_flag) -> bool:
     # If got here, then geometries are the same
     return True
 
-
-
-
-
-    # # 2 - Straight-forward comparison. If true, then geometry already exists.
-    # if new_geometry == existing_geometry or compare_geom_distances(new_group, existing_group, False):
-    #     # print(f"The same geometry! In straight-forward comparison")   # DEBUGGING
-    #     return True
-    #
-    # # 3 - Reversing the order of the elements in the new_geometry
-    # # We do this in order to check if it's the same geometry represented from parallel home MACs
-    # if compare_geom_distances(new_group, existing_group, True):
-    #     # print(f"The same geometry! In Reverse")                       # DEBUGGING
-    #     return True
-    #
-    # # print(f"Different! Reached the end")                              # DEBUGGING
-    # return False
-
-# def compare_coordinates(new_center, existing_centers, hole_depth, home_number, parallel_home_numbers):
-#     """
-#     This function compares (x,y,z) points in order to discern if two hole centers
-#     refer to the SAME hole by using the following conditions:
-#     1 - If the two holes centers (x,y,z) coordinates are the same.
-#     2 - If the distance between the two holes centers equals the hole's depth.
-#
-#     *Note - This function is used in order to deal with cases where a hole is being worked
-#      different MACs (which are parallel).
-#
-#     Args:
-#       new_center: Tuple containing the center we're checking.
-#       existing_centers: Set containing the hole's group exisiting centers.
-#       hole_depth: Int containing the hole's depth
-#       home_number: Int containing the new job's home number
-#       parallel_home_numbers: List containing the existing job parallel home numbers
-#
-#     Returns:
-#       True if the two hole centers refer to DIFFERENT holes, and the new_center coordinates
-#       False if the two hole centers refer to the SAME hole.
-#     """
-#     # 1 - Checking if the exact same coordinates already exist
-#     if new_center in existing_centers:
-#         return False, new_center
-#
-#     # Going over on all the existing points in the hole group
-#     for existing_center in existing_centers:
-#         # Checking if the home numbers are parallel
-#         if home_number in parallel_home_numbers:
-#             # Checking if the distance between the centers equals the hole's depth
-#             centers_distance = np.linalg.norm(np.array(new_center) - np.array(existing_center))
-#             # If true, the two centers refer to the same hole, so return False
-#             if abs(centers_distance - hole_depth) <= tolerance:
-#                 return False, existing_center
-#
-#     return True, None
 
 
 def compare_coordinates(new_center, existing_group, home_number, hole_depth, job_number):
