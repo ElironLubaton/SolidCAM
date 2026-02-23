@@ -60,8 +60,8 @@ def processing_loop():
                     process_jobs(job, part_name, topologies_dict)
 
             # Processing the tech drawing JSON we get from AI tools (Gemini), and adding its info
-            # drawing_part_name = "DRAWING_" + part_name
-            # process_tech_drawing_json(tech_drawing_jsons_dir_path, drawing_part_name, topologies_dict)
+            drawing_part_name = "DRAWING_" + part_name
+            process_tech_drawing_json(tech_drawing_jsons_dir_path, drawing_part_name, topologies_dict)
 
             print(f"\n***********************\n")
 

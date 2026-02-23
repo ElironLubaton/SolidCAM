@@ -24,7 +24,7 @@ class Topology:
   def add_hole_group(self,job, new_coordinates, holes_group_info, part_name):
     """
     This method does the following:
-    1 - Creates HoleGroup instance - only in the geometric shape (geom_ShapePoly field in JSON) doesn't exist in that topology.
+    1 - Creates HoleGroup instance - only if the geometric shape (geom_ShapePoly field in JSON) doesn't exist in that topology.
     2 - Creates a Hole instance - only if the hole doesn't exist in that hole group).
 
     Args:
@@ -41,7 +41,8 @@ class Topology:
     # Going over on all existing hole groups and check if the "new" geometry shape already exists
     for existing_group in self.holes_groups:
       # If true, then geometry shape or its reverse already exists, so just updating number of centers
-      if compare_geometries(new_geom_shape, existing_group.geom_shape, job_number):
+      # if compare_geometries(new_geom_shape, existing_group.geom_shape, job_number):
+      if compare_geometries(holes_group_info, existing_group, False) or compare_geometries(holes_group_info, existing_group, True):
         new_group_flag = False
         # Going over the centers in the new coordinates in order to update centers
         for new_center_coordinates in new_coordinates:
