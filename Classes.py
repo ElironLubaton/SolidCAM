@@ -158,13 +158,15 @@ class HoleGroup:
   def print(self, group_index):
     """ This method prints selected fields from that hole group """
     # print(f"Part name: {self.part_name}")
-    print(f"Number of instances in Hole Group {group_index}:  {len(self.centers)}")
-    print(f"Geometry shape: {self.geom_shape}") # Print when checking MACs
-    print(f"Holes centers: {{{', '.join(f'({x}, {y}, {z})' for x, y, z in self.centers)}}}")  # DEBUGGING
-    print(f"Diameter: {self.diameter} | Depth: {round(self.hole_depth, 3)}")
+    print(f"{bold_s}Hole Group {group_index}{bold_e}")
+    print(f"Number of holes in Hole Group {group_index}:  {len(self.centers)}")
+    # print(f"Geometry shape: {self.geom_shape}") # Print when checking MACs
+    # print(f"Holes centers: {{{', '.join(f'({x}, {y}, {z})' for x, y, z in self.centers)}}}")  # DEBUGGING
+    print(f"Holes Diameter:                   {self.diameter}")
+    print(f"Holes Depth:                      {round(self.hole_depth, 3)}")
     # print(f"Depth: {round(self.hole_depth, 3)}")
 
-    print(f"\nEach hole, and the jobs performed on it:")
+    print(f"\nEach hole, and the jobs performed on it:\n")
     for hole in self.holes.values():
       print(f"Hole position at {tuple(float(x) for x in hole.center_coordinates)}")
       # print(f"Hole tolerance type: {hole.tolerance_type} | upper: {hole.upper_tolerance} | lower: {hole.lower_tolerance}") # DEBUGGING
@@ -182,32 +184,32 @@ class HoleGroup:
       #   print(f"hole.cbore_depth is: {hole.cbore_depth}")  # DEBUGGING
 
       if hole.diam_tol_exists:
-        print(f"Diameter tolerance specified is: {hole.diam_tol_plus}+ and {hole.diam_tol_minus}-")
+        print(f"Diameter tolerance specified is:   {hole.diam_tol_plus}+ and {hole.diam_tol_minus}-")
       else:
         print(f"Diameter Tolerance is NOT specified")
       if hole.depth_tol_exists:
-        print(f"Depth tolerance specified is:    {hole.depth_tol_plus}+ and {hole.depth_tol_minus}-")
+        print(f"Depth tolerance specified is:      {hole.depth_tol_plus}+ and {hole.depth_tol_minus}-")
       else:
         print(f"Depth Tolerance is NOT specified")
       # GD&T related
       if hole.gdandt_exists:
-        print(f"GD&T tolerance type is:  {hole.gdandt_tol_type}")
-        print(f"GD&T tolerance value is: {hole.gdandt_tol_value}")
+        print(f"GD&T tolerance type is:            {hole.gdandt_tol_type}")
+        print(f"GD&T tolerance value is:           {hole.gdandt_tol_value}")
       else:
         print(f"GD&T is NOT specified")
       # Context related
-      print(f"material is:             {hole.material}")
-      print(f"surface_finish is:       {hole.surface_finish}")
+      print(f"material is:                       {hole.material}")
+      print(f"surface_finish is:                 {hole.surface_finish}")
       # Thread related
       if hole.has_thread:
-        print(f"Thread exists, so printing thread info:")
-        print(f"thread_nominal_dia_drawing is: {hole.thread_nominal_dia_drawing}")
-        print(f"thread_pitch_drawing is:       {hole.thread_pitch_drawing}")
-        print(f"thread_depth_drawing is:       {hole.thread_depth_drawing}")
+        # print(f"Thread exists, so printing thread info:")
+        print(f"thread nominal dia (drawing) is:   {hole.thread_nominal_dia_drawing}")
+        print(f"thread pitch (drawing) is:         {hole.thread_pitch_drawing}")
+        print(f"thread depth (drawing) is:         {hole.thread_depth_drawing}")
         # Below is 6H because it is the standard - otherwise, specified in the technical drawing
-        print(f"thread_class_grade is:           {hole.thread_class_grade}")
+        print(f"thread class grade (drawing) is:   {hole.thread_class_grade}")
 
-      print(f"The jobs performed on the hole in the order they were performed:")
+      print(f"{bold_s}Jobs performed{bold_e} (in the order they were performed):")
       for i, job in enumerate(hole.jobs):
         print(f"{i + 1} - {job}")
       print("________________________________________________")
