@@ -253,7 +253,10 @@ def process_tech_drawing_json(tech_drawing_jsons_dir_path: str, part_name: str, 
                     hole.has_thread = 1
                     hole.thread_nominal_dia_drawing = parse_float(entry.get("thread_nominal_diameter"))
                     hole.thread_pitch_drawing = parse_float(entry.get("thread_pitch"))
-                    hole.thread_depth_drawing = parse_float(entry.get("thread_depth"))
+                    if parse_float(entry.get("thread_depth"))==0:
+                        hole.thread_depth_drawing = hole.hole_depth
+                    else:
+                        hole.thread_depth_drawing = parse_float(entry.get("thread_depth"))
                     hole.thread_class_grade = str(entry.get("thread_class_grade"))
 
                 # --- GD&T Attributes ---
