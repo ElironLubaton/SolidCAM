@@ -44,10 +44,17 @@ def rotation_translation(home_matrix):
     return rotation_mat, translation_vec
 
 
-def extract_coordinates(holes_group_info, rotation_mat, translation_vec):
+def extract_coordinates_and_transform(holes_group_info, rotation_mat, translation_vec):
     """
-    This function extracts holes centers (x,y,z) coordinates from a job.
-    It extracts the hole centers depending on the job's type given.
+    This function does 2 things:
+    1 - Extracts holes centers (x,y,z) coordinates from a job - it extracts the hole centers depending on the
+    job's type given:
+        - Given position format "VFrmt_P3Str_P3End_V3Dir": Taking only first 3 values (out of 9) from each point
+        - Given position format "VFrmt_XY":                Taking (x,y) values, and set 'z' = geometry's upper level
+
+    2 - Transforming the points to the CAD coordinate system origin.
+    By doing that it allows us to compare between points, and telling them apart.
+
 
     Args:
       holes_group_info (dict):   Holes group information
@@ -82,8 +89,8 @@ def extract_coordinates(holes_group_info, rotation_mat, translation_vec):
 
 def transform_points(coordinates, rotation_mat, translation_vec):
     """
-    This function transforms hole center (x,y,z) coordinates from any coordinate
-    system to the CAD model coordinate system:
+    This function transforms hole center (x,y,z) coordinates from any coordinates system
+    to the CAD model coordinates system:
     1 - Translation - Subtracting the translation vector from the hole center coordinates.
     2 - Rotation -    Dot product of the rotation matrix with the hole center coordinates.
 
@@ -190,13 +197,12 @@ def compare_geometries(new_group, existing_group, reverse_flag) -> bool:
 
 def compare_coordinates(new_center, existing_group, home_number, hole_depth, job_number):
     """
+    This function purpose is dealing with cases where a hole is being worked from different MACs (which are parallel).
+
     This function compares (x,y,z) points in order to discern if two hole centers
     refer to the SAME hole by using the following conditions:
     1 - If the two holes centers (x,y,z) coordinates are the same.
     2 - If the distance between the two holes centers equals the hole's depth.
-
-    *Note - This function is used in order to deal with cases where a hole is being worked
-     different MACs (which are parallel).
 
     Args:
       new_center: Tuple containing the center we're checking.
@@ -206,8 +212,9 @@ def compare_coordinates(new_center, existing_group, home_number, hole_depth, job
       job_number(int): Int containing the job's number (for Debugging purposes)
 
     Returns:
-      True if the two hole centers refer to the SAME hole, and the existing hole object.
-      False if the two hole centers refer to DIFFERENT holes.
+      tuple: A 2-element tuple containing:
+        - bool: True if the centers reger to the SAME hole, False otherwise.
+        - Hole or None: The existing Hole object if found, otherwise None.
     """
 
     hole_exist_flag = False

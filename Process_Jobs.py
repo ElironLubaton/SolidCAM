@@ -1,4 +1,4 @@
-from MACs_Conversions import rotation_translation,  extract_coordinates
+from MACs_Conversions import rotation_translation,  extract_coordinates_and_transform
 from Utilities_and_Cosmetics import topology_sort
 from Classes import Topology
 
@@ -24,9 +24,12 @@ def process_jobs(job, part_name, topologies_dict):
 
     # Loops on all elements in 'recognized_holes_groups' field - each represents a hole group
     for holes_group_info in job['geometry']["recognized_holes_groups"]:
-        # Extracting the coordinates based on the coordinates format
-        new_coordinates = extract_coordinates(holes_group_info, rotation_mat, translation_vec)
 
+        ### Coordinates extraction and transformation ###
+        # Extracting the coordinates based on the coordinates format
+        new_coordinates = extract_coordinates_and_transform(holes_group_info, rotation_mat, translation_vec)
+
+        ### Topology ###
         # Checking if the topology type is a valid string, and Cosmetics
         topology_type = topology_sort(holes_group_info["_topology_type"])
         # Saving the mask - a set of number that defines the topology
@@ -35,16 +38,18 @@ def process_jobs(job, part_name, topologies_dict):
         if topology_mask<=0:
             print(f"Topology mask is NOT valid")
             break
-
-        # Saving the reversed topology mask
+        # Saving the reversed topology mask (in purpose of comparing points' coordinates)
         reversed_topology_mask = int(str(topology_mask)[::-1])
-        # Checking if the mask or its reverse already exist. If true, create new Topology instance
+
+        ### Topologies Comparison ###
+        # Checking if the topology mask or its reverse already exist. If true, create new Topology instance
         if topology_mask not in topologies_dict and reversed_topology_mask not in topologies_dict:
             topologies_dict[topology_mask] = Topology(topology_type, topology_mask)
         # If got here, then checking if the reverse mask already exists - If true, then save the reversed mask
         elif reversed_topology_mask in topologies_dict:
             topology_mask = reversed_topology_mask
 
+        ### Adding holes groups ###
         # If it's the first time encountering that geometry shape & holes, add it
         topologies_dict[topology_mask].add_hole_group(job, new_coordinates, holes_group_info, part_name)
 

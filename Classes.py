@@ -21,7 +21,7 @@ class Topology:
     self.holes_groups = []              # The hole groups that belong to this topology
     self.jobs_orders_dict = dict()      # Used for printing the legend in plots
 
-  def add_hole_group(self,job, new_coordinates, holes_group_info, part_name):
+  def add_hole_group(self, job, new_coordinates, holes_group_info, part_name):
     """
     This method does the following:
     1 - Creates HoleGroup instance - only if the geometric shape (geom_ShapePoly field in JSON) doesn't exist in that topology.
@@ -38,11 +38,11 @@ class Topology:
     job_number = job["job_number"]
     new_group_flag = True
 
-    # Going over on all existing hole groups and check if the "new" geometry shape already exists
+    # Going over all existing holes groups in the current topology to check if the "new" geometry shape already exists
     for existing_group in self.holes_groups:
-      # If true, then geometry shape or its reverse already exists, so just updating number of centers
-      # if compare_geometries(new_geom_shape, existing_group.geom_shape, job_number):
+      # Comparing geometries - comparing the "new" geometry with an existing one
       if compare_geometries(holes_group_info, existing_group, False) or compare_geometries(holes_group_info, existing_group, True):
+        # If True, then geometry shape or its reverse ALREADY EXISTS, so just updating number of centers.
         new_group_flag = False
         # Going over the centers in the new coordinates in order to update centers
         for new_center_coordinates in new_coordinates:
@@ -57,12 +57,16 @@ class Topology:
           else:
             existing_group.add_hole(job, holes_group_info, new_center_coordinates)
 
-    # If true, then the hole group is new (the geometry shape doesn't exist)
+    ### Creating a new HoleGroup instance ###
+    # If True, then the hole group is NEW (the geometry shape doesn't exist)
     if new_group_flag:
       # Creating a new instance of HoleGroup
       new_group = HoleGroup(new_geom_shape, holes_group_info, part_name, self)
 
-      # For each hole we create a new Hole instance, and add it to the new hole group
+      # Creating Hole instances. For each hole in the new hole group:
+      #   - Create a new Hole instance
+      #   - Add the relevant job to that Hole instance
+      #   - Add the Hole instance to the new HoleGroup instance
       for new_center_coordinates in new_coordinates:
         new_group.add_hole(job, holes_group_info, new_center_coordinates)
 
@@ -157,17 +161,19 @@ class HoleGroup:
 
   def print(self, group_index):
     """ This method prints selected fields from that hole group """
-    # print(f"Part name: {self.part_name}")
-    print(f"{bold_s}Hole Group {group_index}{bold_e}")
+    # print(f"Part name: {self.part_name}")        # DEBUGGING
+    print("*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-")
+    print(f"                {bold_s}Hole Group {group_index}{bold_e}                 ")
     print(f"Number of holes in Hole Group {group_index}:  {len(self.centers)}")
-    # print(f"Geometry shape: {self.geom_shape}") # Print when checking MACs
+    # print(f"Geometry shape: {self.geom_shape}")  # DEBUGGING - Print when checking MACs
     # print(f"Holes centers: {{{', '.join(f'({x}, {y}, {z})' for x, y, z in self.centers)}}}")  # DEBUGGING
     print(f"Holes Diameter:                   {self.diameter}")
     print(f"Holes Depth:                      {round(self.hole_depth, 3)}")
     # print(f"Depth: {round(self.hole_depth, 3)}")
 
     print(f"\nEach hole, and the jobs performed on it:\n")
-    for hole in self.holes.values():
+    for hole_index, hole in enumerate(self.holes.values()):
+      print(f"{bold_s}Hole {hole_index+1}:{bold_e}")
       print(f"Hole position at {tuple(float(x) for x in hole.center_coordinates)}")
       # print(f"Hole tolerance type: {hole.tolerance_type} | upper: {hole.upper_tolerance} | lower: {hole.lower_tolerance}") # DEBUGGING
       # print(f"thread_nominal_diameter: {hole.thread_nominal_diameter} | thread_pitch: {hole.thread_pitch} " # DEBUGGING
@@ -213,8 +219,7 @@ class HoleGroup:
       for i, job in enumerate(hole.jobs):
         print(f"{i + 1} - {job}")
       print("________________________________________________")
-    print("                NEW HOLE GROUP                 ")
-    print("*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-")
+
 
 
 

@@ -20,10 +20,10 @@ The data is being processed as follows:
 """
 
 # Path to JSON's folder
-jsons_dir_path = "C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/JSONs"
+jsons_dir_path = "G:/My Drive/Working_Folder/SolidCAM/CodePy/JSONs"
 
 # Path to Tech_Drawing_JSONs
-tech_drawing_jsons_dir_path = "C:/Users/eliron.lubaton/Desktop/SolidCAM/CodePy/Tech_Drawing_JSONs"
+tech_drawing_jsons_dir_path =   "G:/My Drive/Working_Folder/SolidCAM/CodePy/Tech_Drawing_JSONs"
 
 # Global variables - defines which jobs are of intrest
 drilling_types = ["NC_DRILL_OLD", "NC_DRILL_DEEP", "NC_THREAD", "NC_DRILL_HR", "NC_JOB_MW_DRILL_5X"]
@@ -47,7 +47,7 @@ def processing_loop():
             # Going over all jobs in the part
             print(f"Part name is: {part_name}")
             for job in data["event_data"]["jobs"]:
-                # Processing only specific jobs of intrest
+                # Processing only specific jobs of interest
                 if job["type"] not in drilling_types and job["type"] not in non_drilling_types:
                     continue
 
